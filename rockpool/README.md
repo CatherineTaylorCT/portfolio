@@ -5,6 +5,7 @@ date: "2023-10-20"
 output: html_document
 ---
 
+## The HTML document can be accessed via this link, https://rpubs.com/CT27/1133818
 
 ### Rockpool data analysis (Ababneh, S., Moreau, Z. (2023). A Beginner's Guide To Sampling Rockpools. Environmental Field Methods, QUBES Educational Resources. doi:10.25334/PWG7-8822)
 ## Introduction
