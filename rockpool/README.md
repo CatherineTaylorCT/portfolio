@@ -5,9 +5,12 @@ date: "2023-10-20"
 output: html_document
 ---
 
-## The HTML document can be accessed via this link, https://rpubs.com/CT27/1133818
 
 ### Rockpool data analysis (Ababneh, S., Moreau, Z. (2023). A Beginner's Guide To Sampling Rockpools. Environmental Field Methods, QUBES Educational Resources. doi:10.25334/PWG7-8822)
+
+
+The HTML document can be accessed via this link, https://rpubs.com/CT27/1133818
+
 ## Introduction
 Rockpools offer a glimpse into ecological differences on a miniature scale. Smaller rocks caught in larger ones create these unique formations, like the James rockpools, eroded by water over millions of years. Each pool presents abiotic and biotic elements, making it a microcosm of larger ecosystems. The investigation at the James Rockpools aims to explore these interactions and the relationship between biodiversity and the rockpools' physical traits, like elevation, tidal flows, and nutrient availability. We hypothesize that each rockpool's shape influences species richness.
 
