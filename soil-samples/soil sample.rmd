@@ -9,7 +9,9 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-### Analysisng data collected from three enviroments; Wivenhoe trail, back garden and the campus lake.
+### Metagenomic observations from Soil Microbial Communities: Functional Genes, Adaptations, Species Distributions, and Interactions.
+##### Introduction- According to Libretexts (2022), soil formation involves 45% inorganic minerals, mostly sand, silt, and clay, allowing elements such as ammonia, calcium, and zinc to be available. The organic matter in soil constitutes 5% (Libretexts, 2022) of macroorganisms and microorganisms, which may include dead or decaying matter. These are crucial for completing the ecosystem with continuous nutrient cycles such as phosphorus, carbon, and nitrogen (Bormann & Likens, 1970). Soil also contains 25% water (Libretexts, 2022), which provides essential hydrocarbons for cellular processes for macro and microorganisms, and 25% air (Libretexts, 2022), which is ideal for aerobic organisms.The diversity of microbial populations in soil fluctuates and adapts quickly due to the quick reproduction of generations, DNA mutations and genome or epigenetic modifications (Elena & Lenski, 2003) due to changes in PH, temperature, and nutrient availability in soil. (Daniel, 2005). These environmental factors affect the microbial's functional genes, adaptations, species distributions, interactions, and evolutionary relationships (Elena & Lenski, 2003). These complex microscopic communities' genotypes and phenotypes can be observed and compared with other abundant microbial communities in various habitats (Fierer & Jackson, 2006). Originating from discovering microorganisms under a microscope (Gest, 2004) by Robert Hooke and Antoni Van Leeuwenhoek. The continuous modern advances of inspection and deeper understanding of the biodiversity of prokaryotic species today uncover their function, purpose and possibilities, as well as resemblance from DNA and RNA sequencing and data analysis. (Burke et al., 2011). In particular, the "Third-generation sequencing" (Petersen et al., 2019) Oxford Nanopore sequencing 16S Barcoding Kit is specifically designed to target the rRNA gene, allowing for identifying bacterial communities. The technology relies on DNA strands passing through nanopores, altering electrical currents to determine base sequences (Petersen et al., 2019). Unlike Next Generation Sequencing, where DNA fragments are short-reads (Soliman et al., 2017), nanopore technology can sequence long-reads, generating additional DNA sequences for further analysis; this makes it an optimal choice for observing microorganisms in soil samples. This study investigates and compares soil samples from three locations: the lake (on campus), the Wivenhoe trail (outside campus), and the garden (outside campus). To explore what species are present in soil samples in the various locations, critical functional genes in the microorganisms found in soil samples and any unique DNA adaptations or traits in the samples that evolved in response to habitat conditions. In addition, metagenomic analysis of soil DNA provides insights into community interactions, for example, ecological competition or symbiosis. Hypothesis 1: The study aims to show that the conserved functional genes in microorganisms found in soil differ significantly in different environmental habitats.Hypothesis 2: Microorganisms in soil samples show unique genetic adaptations and traits within different locations and environmental conditions.
+
 
 ```{R}
 install.packages("readr")
@@ -27,7 +29,7 @@ install.packages("dplyr")
 library(dplyr)
 ```
 ```{R}
-# Assuming your dataframe is named df, select specific columns
+# Select specific columns
 df_cleaned <- data %>%
   select(`tax`, `barcode01`, `barcode02`, `barcode03`, `barcode04`, `barcode05`, `barcode10`, unclassified, total)
 
@@ -52,34 +54,165 @@ if (!require("BiocManager", quietly = TRUE))
 
 BiocManager::install("phyloseq")
 
-install.packages("tidyverse")
-
 install.packages("lattice")
+library(phyloseq)
+library(lattice)
+install.packages(c("ggplot2", "dplyr", "tidyr", "readr", "purrr", "tibble", "stringr", "forcats", "magrittr" ))
+library(magrittr)
+library(tidyr)
 ```
 
+```{R}
+install.packages("magrittr")
+library(magrittr)
+install.packages("tidyr")
+library(tidyr)
+```
+```{R}
+
+df_cleaned <- species_aggregate %>% separate(tax, sep = ";", into = c("Domain", "Kingdom", "Phylum", "Class", "Order", "Family", "Genus"))
+head(df_cleaned)
+```
+```{R}
+tax_data <- df_cleaned %>% select(c("Phylum", "Class", "Order", "Family", "Genus"))
+
+tax_ranks <- colnames(tax_data)
+
+tax_data <- tax_table(tax_data)
+```
+```{R}
+dimnames(tax_data)[[2]] <- tax_ranks
+
+head(tax_data)
+```
+```{R}
+# first, extract all columns starting with 'barcode'
+otu_tab <- df_cleaned %>% select(starts_with("barcode"))
+
+# now we convert it to an otuTable object
+# the 'taxa_are_rows' argument tells phyloseq which orientation our data are in
+otu_tab <- otu_table(otu_tab, taxa_are_rows = T)
+
+head(otu_tab)
+```
+```{R}
+microbiome <- phyloseq(otu_tab, tax_data)
+
+microbiome # prints a nice summary of the data
+head(otu_table(microbiome))
+head(tax_table(microbiome))
+```
+```{R}
+# Can change which taxonomic rank the plot shows
+plot_bar(microbiome, fill = "Phylum")
+```
+
+##### Presented here is a visual representation in the form of a stacked bar chart showcasing the prevalence of different bacterial phyla across multiple samples. Each bar is color-coded to denote a specific phylum, and the length of each color segment indicates its abundance in the respective sample. This informative tool aids in comprehending the diversity and relative prevalence of various bacteria in each sample, while the array of colors within each bar offers valuable insights into the intricacies of the microbial ecosystem. This knowledge is crucial for ecological and biological studies where accurate understanding of the makeup of microbial communities is paramount.
 
 
+```{R}
+sample_sums(microbiome) # shows the number of sequences in each sample
+```
+```{R}
+rarefiedData <- rarefy_even_depth(microbiome,
+    sample.size = min(sample_sums(microbiome)), replace = F)
+```
+```{R}
 
+# Calculate species richness of ACE and Shannon
+richness_data <- estimate_richness(rarefiedData, measures = c("ACE", "Shannon"))
 
+# View the first few lines of the diversity data
+head(richness_data)
 
+```
 
+```{R}
+# Load the ggplot2 package
+library(ggplot2)
 
+# Create a data frame with your data
+data <- data.frame(
+  Barcode = c("barcode01", "barcode02", "barcode03", "barcode04", "barcode05", "barcode10"),
+  ACE = c(1240.594, 1538.493, 1251.353, 1055.012, 1071.254, 1130.701),
+  se.ACE = c(18.95278, 22.25332, 18.53425, 17.85359, 17.39766, 17.79527),
+  Shannon = c(5.147862, 5.196808, 5.693757, 4.823278, 5.250453, 5.345040)
+)
 
+# Calculate the upper and lower limits of the error bars for ACE
+data$ACE_upper <- data$ACE + data$se.ACE
+data$ACE_lower <- data$ACE - data$se.ACE
 
+# Create the plot with error bars for ACE
+ggplot(data, aes(x = Barcode)) +
+  geom_errorbar(aes(ymin = ACE_lower, ymax = ACE_upper), width = 0.2) +
+  geom_point(aes(y = ACE), color = 'red', size = 3) +
+  geom_line(aes(y = ACE, group = 1), color = 'red') +
+  geom_point(aes(y = Shannon * 100), color = 'blue', size = 3) + # Multiplying by 100 for visualization purposes
+  geom_line(aes(y = Shannon * 100, group = 1), color = 'blue') +
+  theme_minimal() +
+  labs(title = "ACE and Shannon across Barcodes", x = "Barcode", y = "Value") +
+  scale_y_continuous(sec.axis = sec_axis(~ . / 100, name = "Shannon")) # Adding a secondary axis for Shannon
+```
 
+##### A line plot shows the variation of two alpha diversity measures, the ACE Index and the Shannon Index, across different samples labelled as barcodes. The ACE Index estimates species richness, while the Shannon Index reflects the species' abundance and evenness. The x-axis shows the sample barcodes and the y-axis displays the diversity indices. The error bars on the ACE Index indicate the variability of the estimates. The peak at barcode02 on the ACE Index line implies a higher estimated number of species there.
 
+```{R}
+# Use ggplot2 to create the plot with ACE and Shannon
+ggplot(data, aes(x = Barcode)) +
+  # Add ACE points
+  geom_point(aes(y = ACE), color = "black") +
+  # Add error bars for ACE
+  geom_errorbar(aes(ymin = ACE_lower, ymax = ACE_upper), width = 0.2) +
+  # Add Shannon points
+  geom_point(aes(y = Shannon * 200), color = "blue", shape = 17) + # Multiplying Shannon by a factor to scale appropriately
+  # Customizations
+  theme_minimal() +
+  labs(title = "Alpha Diversity Measures for Samples", x = "Barcode", y = "ACE") +
+  # Adjust the secondary axis for the Shannon index
+  scale_y_continuous(
+    name = "ACE",
+    sec.axis = sec_axis(~ . / 200, name="Shannon") # Adjust this transformation to match the scale of Shannon
+  )
 
+# Display the plot
+ggsave("alpha_diversity_plot.png", width = 10, height = 6, dpi = 300)
+```
 
+##### The graph presents a comparative analysis of alpha diversity within samples using two metrics: the ACE Index and the Shannon Index. The ACE Index, represented by black error bars, estimates species richness with a focus on rare species, while the Shannon Index, indicated by blue triangles, evaluates species' abundance and evenness. The x-axis labels 'barcode01' through 'barcode10' likely denote individual samples or sequences, and the dual y-axes allow for a direct comparison between the two indices. This visualization aids in discerning the biodiversity of each sample, where higher values on both indices indicate greater diversity. The error bars capture variability in the ACE Index, which provides insight into the confidence of these estimations.
+```{R}
+# First, create the data frame with your data
+data <- data.frame(
+  Barcode = c("barcode01", "barcode02", "barcode03", "barcode04", "barcode05", "barcode10"),
+  ACE = c(1240.594, 1538.493, 1251.353, 1055.012, 1071.254, 1130.701),
+  Shannon = c(5.147862, 5.196808, 5.693757, 4.823278, 5.250453, 5.345040)
+)
 
+# Descriptive statistics for ACE
+ace_mean <- mean(data$ACE)
+ace_sd <- sd(data$ACE)
+ace_se <- ace_sd / sqrt(length(data$ACE))
 
+# Descriptive statistics for Shannon
+shannon_mean <- mean(data$Shannon)
+shannon_sd <- sd(data$Shannon)
+shannon_se <- shannon_sd / sqrt(length(data$Shannon))
 
+# Output the descriptive statistics
+cat("Descriptive Statistics for ACE:\n")
+cat("Mean:", ace_mean, "SD:", ace_sd, "SE:", ace_se, "\n\n")
 
+cat("Descriptive Statistics for Shannon:\n")
+cat("Mean:", shannon_mean, "SD:", shannon_sd, "SE:", shannon_se, "\n")
+```
+```{R}
+nmdsResult <- ordinate(rarefiedData, "NMDS", "bray")
+```
+```{R}
+plot_ordination(rarefiedData, nmdsResult, type = "sample")
+```
 
-
-
-
-
-
+##### The scatter plot provided depicts Non-metric Multidimensional Scaling (NMDS), a technique that reduces multidimensional data into two dimensions for visual representation. The two axes, NMDS1 and NMDS2, signify two dimensions of variation based on ranked dissimilarities among data points. Each point on the plot represents an individual sample, with proximity indicating similarity; closer points suggest greater similarity. This plot is useful in identifying clusters or gradients, indicating patterns or groupings within the data. However, detailed interpretation of the plot's structure is limited without additional annotations or a stress value. The significance of this visualization lies in its ability to simplify complex relationships within high-dimensional data.
 
 
 
