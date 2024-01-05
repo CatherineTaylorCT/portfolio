@@ -1,0 +1,1 @@
+This portfolio contains two collections of raw data (from outside sources as well as my own class data), of which I have studied indpendantly by cleaning, processeing and the analysising biodiversity of all samples, species richness and any other significances. 

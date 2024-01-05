@@ -1,5 +1,5 @@
 ---
-title: "rockpool data"
+title: "Rockpool data"
 author: "Catherine Taylor"
 date: "2023-10-20"
 output: html_document
@@ -17,7 +17,7 @@ Rockpools offer a glimpse into ecological differences on a miniature scale. Smal
 
 
 ## Conclusion
-Based on our graphical data analysis, various physical and environmental factors influence species richness in rockpool ecosystems. We discovered a limited relationship between species richness and pool volume, indicating that pool size alone does not necessarily determine biodiversity. Additionally, we observed a consistent decrease in species count across pools, suggesting that external or unmeasured factors could impact biodiversity levels. The box plot indicated that canopy cover has a limited impact on species richness. At the same time, the histogram showed that pool volumes are not evenly distributed, with most pools clustering within specific volume ranges. The correlogram provided a more detailed visualization, suggesting that multiple factors may affect species richness in complex ways, although we need further statistical validation to confirm this. This intricate pattern highlights the importance of future studies incorporating a range of ecological variables and rigorous statistical analyses to understand the subtle dynamics of rockpool biodiversity better. These studies should consider the synergistic effects of variables, potential ecological and temporal changes, and controlled experiments to establish causality, ultimately leading to a deeper understanding of the factors that sustain or diminish species richness in these unique ecosystems.
+Based on our graphical data analysis, various physical and environmental factors influence species richness in rockpool ecosystems. We discovered a limited relationship between species richness and pool volume, indicating that pool size alone does not necessarily determine biodiversity. Additionally, we observed a consistent decrease in species count across pools, suggesting that external or unmeasured factors could impact biodiversity levels. The box plot indicated that canopy cover has a limited impact on species richness. At the same time, the histogram showed that pool volumes are not evenly distributed, with most pools clustering within specific volume ranges. The correlogram provided a more detailed visualization, suggesting that multiple factors may affect species richness in complex ways, although we need further statistical validation to confirm this. This intricate pattern highlights the importance of future studies incorporating a range of ecological variables and rigorous statistical analyses to understand the subtle dynamics of rockpool biodiversity better. These studies should consider the synergistic effects of variables, potential environmental and temporal changes, and controlled experiments to establish causality, ultimately leading to a deeper understanding of the factors that sustain or diminish species richness in these unique ecosystems.
 
 
 
