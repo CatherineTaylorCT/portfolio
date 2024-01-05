@@ -6,8 +6,7 @@ output: html_document
 ```
 
 ## The HTML document can be accessed via this link-
-[
-](https://rpubs.com/CT27/1135466)
+(https://rpubs.com/CT27/1135466)
 
 ### Metagenomic observations from Soil Microbial Communities: Functional Genes, Adaptations, Species Distributions, and Interactions.
 #### Introduction
