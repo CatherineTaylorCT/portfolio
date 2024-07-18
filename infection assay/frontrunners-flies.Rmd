@@ -1,0 +1,419 @@
+---
+title: "Drosophila infection assay"
+author: "Catherine Taylor"
+date: "2024-07-17"
+output: html_document
+---
+
+---
+title: "survival collection data (Drosophila)"
+author: "Catherine Taylor"
+date: "2024-03-18"
+output: html_document
+---
+
+---
+# Experiment parameters`
+
+* Start date: 04/03/2024
+* Lab members: `Oleksander, Catherine and Joanne` (Frontrunners 2023/24)
+* Genotypes:
+    * _daxx^NP4778^_
+    * _Dahomey wild types_
+* Pathogen: e.g. _S. marcescens_ Db11 (OD~600~=100)
+* Infection method: oral
+
+```{R}
+setwd("/home/catherinetaylor35")
+
+```
+
+# Preparing the data
+
+## Loading the data
+
+```{R}
+if (!require("readxl")) {
+    install.packages("readxl")
+}
+library(readxl)
+
+data <- read_xlsx("survival data collection template .xlsx")
+head(data)
+
+```
+## Computing tools
+
+##### Libraries
+
+```{R}
+required_packages <- c("BiocManager", "survival", "tidyverse", "survminer", "viridis", "devtools", "kableExtra", "cachem", "ggtext")
+
+for (pkg in required_packages) {
+  if (!require(pkg, character.only = TRUE)) {
+    install.packages(pkg)
+  }
+}
+
+library(tidyverse)
+library(survival)
+library(survminer)
+library(viridis)
+library(devtools)
+library(kableExtra)
+library(cachem)
+library(ggtext)
+```
+
+## Data preparation and wrangling
+
+```{R}
+# Inspect the data to understand its structure
+print(head(data))
+
+# Remove unnecessary rows and columns
+data <- data[-c(1,2), ]
+
+# Rename columns to make them more descriptive
+colnames(data) <- c("GENOTYPE", "FOOD", "SEX", "INFECTION", "REPLICATE")
+
+# Convert factors to characters
+data <- data.frame(lapply(data, function(x) if(is.factor(x)) as.character(x) else x))
+
+# Handle missing data
+data <- na.omit(data)
+print(colnames(data))
+
+# Convert columns with 'NA' in their name to numeric
+numeric_columns <- colnames(data)[grepl("NA", colnames(data))]
+data <- data %>%
+  mutate(across(all_of(numeric_columns), ~as.numeric(as.character(.))))
+
+# Inspect the cleaned data
+print(data)
+
+# Save the cleaned data
+write.csv(data, "cleaned_data.csv", row.names = FALSE)
+```
+
+## Further analysis
+
+```{R}
+# Set the new column names
+new_column_names <- c("GENOTYPE", "FOOD", "SEX", "INFECTION", "REPLICATE",
+                      "2024-03-04 19:15:00", "2024-03-05 09:30:00", "2024-03-05 13:20:00",
+                      "2024-03-05 17:40:00", "2024-03-06 09:10:00", "2024-03-06 13:05:00",
+                      "2024-03-06 16:59:00", "2024-03-07 10:07:00", "2024-03-07 13:00:00",
+                      "2024-03-07 17:00:00", "2024-03-08 09:00:00", "2024-03-08 13:07:00",
+                      "2024-03-08 17:00:00", "2024-03-09 10:05:00", "2024-03-11 13:00:00",
+                      "2024-03-12 12:40:00")
+
+# Rename the columns
+colnames(data) <- new_column_names
+
+# Reshape the 'data' dataframe from wide to long format using the pivot_longer function
+data_long <- data %>%
+  pivot_longer(
+    cols = 6:21, 
+    names_to = "Time_Point",
+    values_to = "Deaths"
+  )
+
+# Convert the 'Time_Point' column in 'data_long' to POSIXct format (date-time class)
+data_long <- data_long %>% mutate(Time_Point = as.POSIXct(Time_Point))
+# Print the 'data_long' dataframe to the console
+print(data_long)
+
+```
+
+
+## Custom Function analyse_spreadsheet
+
+```{R}
+devtools::source_url('https://raw.githubusercontent.com/jdenavascues/Survival_functions/main/infection.R')
+head(data_long)
+```
+
+```{R}
+# Separate the date and time from the Time_Point column
+data_long <- data_long %>%
+  mutate(
+    date = as.Date(Time_Point),
+    time = format(as.POSIXct(Time_Point), format = "%H:%M:%S")
+  )
+
+# Rename columns to match the desired output
+data_long <- data_long %>%
+  rename(
+    Genotype = GENOTYPE,
+    Treatment_1 = FOOD,
+    Sex = SEX,
+    Treatment_2 = INFECTION,
+    Replicate = REPLICATE,
+    deaths = Deaths
+  ) %>%
+  select(Genotype, Treatment_1, Sex, Treatment_2, Replicate, deaths, date, time)
+
+# Display the transformed data
+print(data_long)
+
+```
+
+## Now we can provide the wrapper function with all we need for a quick prelim work
+
+```{R}
+data_long <- analyse_spreadsheet(data_long, cph = TRUE)
+
+```
+
+## Knit
+
+```{R}
+# Load the necessary library
+library(kableExtra)
+
+# Create an HTML table from the 'data_long' dataframe using the kable function
+# Style the HTML table with the kable_styling function
+tb <- knitr::kable(data_long, format = "html")
+tb_styled <- kable_styling(tb, "striped", position = "left", font_size = 10, html_font = '"Arial", arial, helvetica, sans-serif')
+# Print the styled table
+tb_styled
+
+```
+
+##### Table 1. The dataset comprises survival data of flies subjected to various treatments, detailing genotype, sex, treatment conditions, replicate number, time to event, and event type for each fly. Genotypes include daxx[NP4778] and Dahomey, with treatments such as Normal, vehicle, P.ent., and HCr 50mM. The sex of the flies is denoted as M for male and F for female. The dataset includes replicate numbers ranging from 1 to 3. The time_to_event variable records the duration in hours until an event occurs, with event_type indicating event occurrence (1 for event, 0 for no event). For instance, a male daxx[NP4778] fly treated with vehicle in replicate 2 experienced an event at 22.4 hours, while a female daxx[NP4778] fly treated with P.ent. in replicate 1 experienced an event at 14.2 hours. Conversely, a male Dahomey fly treated with P.ent. in replicate 2 did not experience an event within 185.0 hours. This dataset is primed for survival analysis, such as Kaplan-Meier and Cox proportional hazards regression, to evaluate the impact of treatments and genotypes on fly survival times.
+
+## Hypothesis Testing
+
+##### Different hypotheses:
+
+Are Pseudomonas entomophila really killing flies?
+
+If P.ent. are pathogenic,
+
+ - Are Drosophila males and females different in their susceptibility?
+ - Are daxx^NP4778^ mutants more susceptible than Dahomey wild-types?
+ - Does raising the larvae in crotonic acid affect the adult immuno-competence?
+ - Do any of the previous variables interact, i.e. susceptibility only changes in certain combinations of the variables?
+ 
+```{R}
+# Fit a survival model using the surv_fit function
+library(survival)
+library(survminer)
+
+# Fit a survival curve
+pathogenicity <- survfit(Surv(time_to_event, event_type) ~ treatment_2, data = data_long) # do Pseudomonas kill flies?
+
+# Print the result to check
+print(pathogenicity)
+
+# Calculate the p-value for the survival model using the surv_pvalue function
+surv_pvalue(pathogenicity, method = "S1", test.for.trend = FALSE, combine = FALSE)[1:3]
+
+```
+
+```{R}
+# Fit a survival model using the surv_fit function
+sexspec <- surv_fit(Surv(time_to_event, event_type) ~ sex, data = data_long) # does sex affect survival?
+
+# Calculate the p-value for the survival model using the surv_pvalue function
+surv_pvalue(sexspec, method = "1", test.for.trend = FALSE, combine = FALSE)[1:3]
+
+# Plot the survival curves using the ggsurvplot function
+ggsurvplot(sexspec) + ggtitle("Survival Probability by Sex")
+
+```
+
+##### Figure 1. This Kaplan-Meier survival curve illustrates the survival probability of flies over time, categorized by sex (male and female), with the x-axis representing time in hours and the y-axis representing survival probability, ranging from 0 to 1. The dataset consists of survival times for male and female flies, comparing the survival of females (red line) and males (blue line) to assess whether sex impacts overall survival. Each step down in the survival curve represents a death event among the flies. The legend indicates the sex groups, with sex=F for females and sex=M for males. Key observations include male flies (blue) generally maintaining a higher survival probability compared to female flies (red) throughout the observation period, with a more pronounced decline in female survival around the 150-hour mark.
+
+```{R}
+# Fit a survival model for infected flies using the surv_fit function
+sexspec_inf <- surv_fit(Surv(time_to_event, event_type) ~ sex, data = dplyr::filter(data_long, treatment_2 == 'P.ent.'))
+
+# Calculate the p-value for the survival model using the surv_pvalue function
+p_value_inf <- surv_pvalue(sexspec_inf, method = "1", test.for.trend = FALSE, combine = FALSE)[1:3]
+print(p_value_inf)
+
+# Plot the survival curves using the ggsurvplot function with specified colors
+plot_inf <- ggsurvplot(
+  sexspec_inf, 
+  pval = TRUE, 
+  conf.int = TRUE, 
+  risk.table = TRUE,
+  ggtheme = theme_minimal(),
+  palette = c("#E7B800", "#2E9FDF")  # specify colors here
+)
+
+# Add a title to the plot
+plot_inf$plot <- plot_inf$plot + ggtitle("Does Sex Affect Survival in Infected Flies?")
+
+# Print the plot
+print(plot_inf)
+
+```
+
+##### Figure 2. This Kaplan-Meier survival curve illustrates the survival probability of infected flies over time, categorized by sex (male and female), with the x-axis representing time in hours and the y-axis representing survival probability, ranging from 0 to 1. The dataset consists of survival times for male and female flies infected with a pathogen, comparing the survival of females (red line) and males (blue line) to assess whether sex impacts survival under infection. Each step down in the survival curve represents a death event among the flies. The legend indicates the sex groups, with sex=F for females and sex=M for males. Key observations include male flies (blue) generally having a slightly higher survival probability compared to female flies (red) throughout the observation period, with a noticeable drop in female survival probability around the 150-hour mark.
+
+```{R}
+# Fit a survival model for non-infected flies using the surv_fit function
+sexspec_mock <- surv_fit(Surv(time_to_event, event_type) ~ sex, data = dplyr::filter(data_long, treatment_2 == 'vehicle'))
+
+# Calculate the p-value for the survival model using the surv_pvalue function
+surv_pvalue(sexspec_mock, method = "1", test.for.trend = FALSE, combine = FALSE)[1:3]
+
+# Plot the survival curves using the ggsurvplot function
+ggsurvplot(sexspec_mock) + ggtitle("Does Sex Affect Survival in Non-Infected Flies?")
+
+```
+
+##### Figure 3. This Kaplan-Meier survival curve illustrates the survival probability of non-infected flies over time, categorized by sex (male and female), with the x-axis representing time in hours and the y-axis representing survival probability, ranging from 0 to 1. The dataset consists of survival times for male and female flies, comparing the survival of females (red line) and males (blue line) to assess whether sex impacts survival in the absence of infection. Each step down in the survival curve represents a death event among the flies. The legend indicates the sex groups, with sex=F for females and sex=M for males. Key observations include male flies (blue) having a higher survival probability compared to female flies (red) throughout the observation period, with notable differences around the 100-hour mark where female survival decreases more sharply.
+
+```{R}
+# Perform pairwise survival difference test using the pairwise_survdiff function
+res <- pairwise_survdiff(Surv(time_to_event, event_type) ~ sex + genotype + treatment_2, data = data_long)
+
+# Capture the p-value results as a dataframe
+dt <- as.data.frame(round(res$p.value, 3))
+names(dt) <- str_remove_all(names(dt), "sex=|genotype=|treatment_2=")
+rownames(dt) <- str_remove_all(rownames(dt), "sex=|genotype=|treatment_2=")
+
+# Apply conditional formatting to the dataframe and display the table
+dt %>%
+  mutate(across(everything(), ~ case_when(. >= 0.05 ~ cell_spec(., color = "#777777"),
+                                          . < 0.05 & . >= 0.01 ~ cell_spec(., background = "#ffaacc"),
+                                          . < 0.01 & . >= 0.001 ~ cell_spec(., background = "#ee7799"),
+                                          . < 0.001 ~ cell_spec(., background = "#ee5577")))) %>%
+  kbl(booktabs = TRUE, linesep = "", escape = FALSE) %>%
+  kable_minimal(full_width = FALSE)
+
+```
+
+##### Table 2. This table presents pairwise p-values from survival analysis comparing different groups of flies based on sex, genotype (Dahomey and daxx[NP4778]), and treatment (P.ent. and vehicle). The groups include female and male flies under various conditions, with p-values indicating the statistical significance of survival differences between them. For instance, a p-value of 0.738 suggests no significant difference in survival between female Dahomey flies treated with vehicle and P.ent., whereas a p-value of 0.0 indicates a highly significant difference between female daxx[NP4778] flies treated with vehicle and P.ent.
+
+```{R}
+  # Perform pairwise survival difference test for male flies
+res <- pairwise_survdiff(Surv(time_to_event, event_type) ~ genotype + treatment_1 + treatment_2, data = filter(data_long, sex == 'M'))
+
+# Capture the p-value results as a dataframe
+dt <- as.data.frame(round(res$p.value, 3))
+names(dt) <- str_remove_all(names(dt), "genotype=|treatment_1=|treatment_2=")
+rownames(dt) <- str_remove_all(rownames(dt), "genotype=|treatment_1=|treatment_2=")
+
+# Apply conditional formatting to the dataframe and display the table
+dt %>%
+  mutate(across(everything(), ~ case_when(. >= 0.05 ~ cell_spec(., color = "#777777"),
+                                          . < 0.05 & . >= 0.01 ~ cell_spec(., background = "#ffaacc"),
+                                          . < 0.01 & . >= 0.001 ~ cell_spec(., background = "#ee7799"),
+                                          . < 0.001 ~ cell_spec(., background = "#ee5577")))) %>%
+  kbl(booktabs = TRUE, linesep = "", escape = FALSE) %>%
+  kable_minimal(full_width = FALSE)
+
+```
+
+##### Table 3. This table presents pairwise p-values from survival analysis comparing groups of flies based on genotype (Dahomey and daxx[NP4778]), treatment condition (HCr 50mM, Normal), and infection status (P.ent., vehicle). Notable comparisons include a non-significant difference between Dahomey flies treated with HCr 50mM and vehicle (p=0.539) and a significant difference between daxx[NP4778] flies treated with Normal and P.ent. versus vehicle (p=0.007).
+
+```{R}
+# Perform pairwise survival difference test for female flies
+res <- pairwise_survdiff(Surv(time_to_event, event_type) ~ genotype + treatment_1 + treatment_2, data = filter(data_long, sex == 'F'))
+
+# Capture the p-value results as a dataframe
+dt <- as.data.frame(round(res$p.value, 3))
+names(dt) <- str_remove_all(names(dt), "genotype=|treatment_1=|treatment_2=")
+rownames(dt) <- str_remove_all(rownames(dt), "genotype=|treatment_1=|treatment_2=")
+
+# Apply conditional formatting to the dataframe and display the table
+dt %>%
+  mutate(across(everything(), ~ case_when(. >= 0.05 ~ cell_spec(., color = "#777777"),
+                                          . < 0.05 & . >= 0.01 ~ cell_spec(., background = "#ffaacc"),
+                                          . < 0.01 & . >= 0.001 ~ cell_spec(., background = "#ee7799"),
+                                          . < 0.001 ~ cell_spec(., background = "#ee5577")))) %>%
+  kbl(booktabs = TRUE, linesep = "", escape = FALSE) %>%
+  kable_minimal(full_width = FALSE)
+
+```
+
+##### Table 4. This table presents pairwise p-values from survival analysis comparing groups of flies based on genotype (Dahomey and daxx[NP4778]), treatment condition (HCr 50mM, Normal), and infection status (P.ent., vehicle). Significant differences include Dahomey flies treated with HCr 50mM and P.ent. versus vehicle (p=0.135) and a highly significant difference between daxx[NP4778] flies treated with HCr 50mM and P.ent. versus vehicle (p=0).
+
+```{R}
+# palette <- c('#85C1E9', '#999999', '#E74C3C', #'#F1C40F'
+#              '#4444DD', '#000000', '#A2103C') # '#F39C12'
+
+title <- 'Susceptibility to *S. marcescens*'
+model <- surv_fit(Surv(time_to_event, event_type) ~ genotype + treatment_2, data = filter(data_long, sex == 'F'))
+g <- ggsurvplot(model,
+                pval = TRUE,                       # adds pval
+                conf.int = TRUE,                   # adds 95% confidence interval
+                conf.int.alpha = 0.1,              # makes it more transparent
+                surv.median.line = "v",            # adds median points
+                #palette = palette,
+                xlab = "Time (hours)",             # remove x axis label
+                ylab = "Survival Probability",     # y axis label
+                #linetype = line_type,
+                title = title,
+                font.legend = c(7),                # legend size
+                legend = "bottom")                 # legend position
+g
+
+```
+
+####### Figure 4. This Kaplan-Meier survival curve illustrates the survival probability of flies over time, categorized by genotype (Dahomey and daxx[NP4778]) and treatment (P.ent. and vehicle), with the x-axis representing time in hours and the y-axis representing survival probability, ranging from 0 to 1. The dataset compares the survival of different genotypes under various treatment conditions to assess susceptibility to S. marcescens infection. Each step down in the survival curve represents a death event among the flies. The legend differentiates between the groups: Dahomey, P.ent. (green), Dahomey, vehicle (light green), daxx[NP4778], P.ent. (cyan), and daxx[NP4778], vehicle (purple). Key observations include significant differences in survival probabilities, with a p-value of less than 0.0001 indicating highly significant differences between the groups.
+
+```{R}
+# Generate all combinations of unique genotypes and treatments
+exgrid <- expand.grid(unique(sort(data_long$genotype, decreasing = TRUE)), unique(sort(data_long$treatment_2, decreasing = TRUE)))
+exgrid <- exgrid[order(exgrid$Var2),]
+lab_strata <- paste(exgrid$Var1, exgrid$Var2, sep=" | ")
+
+print(lab_strata)
+
+```
+
+
+```{R}
+lab_strata <- c("*myoIA>ctrl^KD^* | Sucrose", "*myoIA>Etl1^KD^* | Sucrose", "*ken^1^* | Sucrose", "*myoIA>ctrl^KD^* | S.marcescens", "*myoIA>Etl1^KD^* | S.marcescens", "*ken^1^* | S.marcescens")
+lab_strata
+
+```
+```{R}
+# Define line types and color palette
+line_type <- c("solid", "dashed", "dotted", "dotdash", "longdash", "twodash")
+palette <- c("red", "blue", "green", "purple", "orange", "brown")
+x <- rep(c(1:20), 6)
+
+variable <- unlist(lapply(lab_strata, rep, 20))
+value <- c(5 + rnorm(20) / 5, 4 + rnorm(20) / 5, 3 + rnorm(20) / 5, 2 + rnorm(20) / 5, 1 + rnorm(20) / 5, rnorm(20) / 5)
+df <- data.frame(x, variable, value)
+
+# Create a line plot using ggplot
+d <- ggplot(df, aes(x = x, y = value, group = variable, colour = variable)) +
+  geom_line(aes(linetype = variable, colour = variable)) +
+  scale_linetype_manual(breaks = lab_strata, values = line_type, labels = lab_strata) +
+  scale_colour_manual(breaks = lab_strata, values = palette, labels = lab_strata) +
+  theme(legend.text = element_text(size = 5), legend.title = element_text(size = 6), legend.key.height = unit(1 / 6, 'in')) +
+  xlab("Time (hours)") + ylab("Survival Probability") + ggtitle("Survival Probability by Genotype and Treatment")
+
+print(d)
+
+```
+
+####### Figure 5. The plot titled "Survival Probability by Genotype and Treatment" illustrates the survival probability of flies over time, categorized by genotype and treatment. The x-axis denotes time in hours, while the y-axis represents survival probability. Six groups are represented: myoIA>ctrl^KD^ | Sucrose (solid red line), myoIA>Etl1^KD^ | Sucrose (dashed blue line), ken^1^ | Sucrose (dotted green line), myoIA>ctrl^KD^ | S.marcescens (dotdash purple line), myoIA>Etl1^KD^ | S.marcescens (longdash orange line), and ken^1^ | S.marcescens (twodash brown line). The legend on the right correlates line type and color to each group, facilitating comparison of survival rates across different genotypes under two treatment conditions, sucrose and S. marcescens.
+
+```{R}
+# Reorder lab_strata vector and extract levels of strata variable
+lab_strata[c(1,3,2,4,6,5)]
+l <- levels(g$data.survtable$strata)[c(6,2,4,5,1,3)]
+l
+
+```
+
+```{R}
+# Add custom color scales to the plot
+g$plot +
+  scale_colour_manual(name='', breaks=l, values=palette, labels=lab_strata[c(1,3,2,4,6,5)], guide=guide_legend(nrow = 3)) +
+  scale_fill_manual(name='', breaks=l, values=palette, labels=lab_strata[c(1,3,2,4,6,5)], guide=guide_legend(nrow = 3)) +
+  scale_linetype_manual(name='', breaks=l, values=line_type, labels=lab_strata[c(1,3,2,4,6,5)], guide=guide_legend(nrow = 3)) +
+  theme(legend.text=element_markdown(), plot.title = element_markdown())
+
+```
+
+##### Figure 6. The plot titled "Susceptibility to S. marcescens" shows the survival probability of flies over time, categorized by genotype and treatment. The x-axis indicates time in hours, and the y-axis represents survival probability. The survival curves for four groups are displayed: ken^1^ | Sucrose (blue line), myoIA>Etl1^KD^ | Sucrose (green line), ken^1^ | S.marcescens (orange line), and myoIA>Etl1^KD^ | S.marcescens (brown line). The legend at the bottom of the plot matches the line color to each group. The plot includes a p-value of < 0.0001, indicating a significant difference in survival probability among the groups. This visualization facilitates the comparison of survival rates across different genotypes under two treatment conditions, sucrose, and S. marcescens.
