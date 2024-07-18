@@ -9,82 +9,70 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-### Metagenomic observations from Soil Microbial Communities: Functional Genes, Adaptations, Species Distributions, and Interactions.
-#### Introduction
-According to Libretexts (2022), soil formation involves 45% inorganic minerals, mostly sand, silt, and clay, allowing elements such as ammonia, calcium, and zinc to be available. The organic matter in soil constitutes 5% (Libretexts, 2022) of macroorganisms and microorganisms, which may include dead or decaying matter. These are crucial for completing the ecosystem with continuous nutrient cycles such as phosphorus, carbon, and nitrogen (Bormann & Likens, 1970). Soil also contains 25% water (Libretexts, 2022), which provides essential hydrocarbons for cellular processes for macro and microorganisms, and 25% air (Libretexts, 2022), which is ideal for aerobic organisms.
-The diversity of microbial populations in soil fluctuates and adapts quickly due to the quick reproduction of generations, DNA mutations and genome or epigenetic modifications (Elena & Lenski, 2003) due to changes in PH, temperature, and nutrient availability in soil. (Daniel, 2005). These environmental factors affect the microbial's functional genes, adaptations, species distributions, interactions, and evolutionary relationships (Elena & Lenski, 2003). 
-These complex microscopic communities' genotypes and phenotypes can be observed and compared with other abundant microbial communities in various habitats (Fierer & Jackson, 2006). Originating from discovering microorganisms under a microscope (Gest, 2004) by Robert Hooke and Antoni Van Leeuwenhoek. The continuous modern advances of inspection and deeper understanding of the biodiversity of prokaryotic species today uncover their function, purpose and possibilities, as well as resemblance from DNA and RNA sequencing and data analysis. (Burke et al., 2011).
-In particular, the "Third-generation sequencing" (Petersen et al., 2019) Oxford Nanopore sequencing 16S Barcoding Kit is specifically designed to target the rRNA gene, allowing for identifying bacterial communities. The technology relies on DNA strands passing through nanopores, altering electrical currents to determine base sequences (Petersen et al., 2019). Unlike Next Generation Sequencing, where DNA fragments are short-reads (Soliman et al., 2017), nanopore technology can sequence long-reads, generating additional DNA sequences for further analysis; this makes it an optimal choice for observing microorganisms in soil samples. 
-This study investigates and compares soil samples from three locations: the lake (on campus), the Wivenhoe trail (outside campus), and the garden (outside campus). To explore what species are present in soil samples in the various locations, critical functional genes in the microorganisms found in soil samples and any unique DNA adaptations or traits in the samples that evolved in response to habitat conditions. In addition, metagenomic analysis of soil DNA provides insights into community interactions, for example, ecological competition or symbiosis. Hypothesis 1: The study aims to show that the conserved functional genes in microorganisms found in soil differ significantly in different environmental habitats.Hypothesis 2: Microorganisms in soil samples show unique genetic adaptations and traits within different locations and environmental conditions.
-
+### The Impact of Urbanisation on Microbial Abundances and Diversity: A Comparative Analysis of Urban Environments
+#### Abstract- Urbanisation affects soil health and diversity. DNA sequencing of soil samples can reveal the impact of urbanisation on microbial communities and their nutrient cycles. Using Oxford nanopore amplicon 16S rRNA target gene technology to sequence the DNA found in soil samples collected from urban environments can be processed. Their abundance, diversity and species richness are calculated, which can underpin the microbial communities in abundance or lack of related to specific carbon and nitrogen cycles analysis that can reveal the impact of urbanisation of microorganisms in soil habitats. However, the impact of urbanisation on nitrogen-fixing microorganisms in urban habitats like gardens and university campuses has yet to be discovered. Here, we show a higher abundance in urban universities than in urban gardens. We also found no significant difference between both settings, suggesting that urbanisation around the locations has impacted soil microorganisms and their nutrient cycles similarly due to human activity. Our results demonstrate how urbanisation in these areas affects microbial communities in the soil, yet not all results had a negative impact, like the high abundance of Epsilonproteobacteria. Furthermore, our assay has uncovered the potential for further research into more niche areas, for example, fertiliser application rates and functional genes involved in the nutrient cycles, as well as testing other significance tests in more depth.
 
 ```{R}
 install.packages("readr")
 library("readr")
 
 data = read_tsv("data.tsv")
-```
-```{R}
 head(data)
 ```
 ```{R}
-if (!require(dplyr)) {
-    install.packages("dplyr")
-    library(dplyr)
-}
-# Select specific columns
-df_cleaned <- data %>%
-  select(`tax`, `barcode01`, `barcode02`, `barcode03`, `barcode04`, `barcode05`, `barcode10`, unclassified, total)
+install.packages("dplyr")
+library(dplyr)
 
-# View the cleaned dataframe
-head(df_cleaned)
-
+# Select only the columns for barcodes 01, 03, 04, 05, and 'unclassified'
+selected_data <- data %>%
+  select(tax, barcode01, barcode03, barcode04, barcode02, unclassified)
+print(selected_data)
 ```
 ```{R}
-# Aggregate data by species
-species_aggregate <- df_cleaned %>%
-  group_by(tax) %>%
-  summarise(across(starts_with("barcode"), sum, na.rm = TRUE)) # Summing up all barcode columns for each species
-
-# View the aggregated data
-head(species_aggregate)
-
-```
-
-```{R}
-# Install the phyloseq package
+# Install the packages
 if (!require("BiocManager", quietly = TRUE))
     install.packages("BiocManager")
-
 BiocManager::install("phyloseq")
-
 install.packages("lattice")
-library(phyloseq)
-library(lattice)
-install.packages(c("ggplot2", "dplyr", "tidyr", "readr", "purrr", "tibble", "stringr", "forcats", "magrittr" ))
-library(magrittr)
-library(tidyr)
-```
-```{R}
+install.packages("ggplot2")
+install.packages("tidyr")
+install.packages("purrr")
+installed.packages("tibble")
+install.packages("stringr")
+install.packages("forcats")
+install.packages("magrittr")
 
-df_cleaned <- species_aggregate %>% separate(tax, sep = ";", into = c("Domain", "Kingdom", "Phylum", "Class", "Order", "Family", "Genus"))
-head(df_cleaned)
+library(dplyr)
+library("phyloseq")
+library("lattice")
+library("ggplot2")
+library("tidyr")
+library("purrr")
+library("tibble")
+library("stringr")
+library("forcats")
+library("magrittr")
 ```
 ```{R}
-tax_data <- df_cleaned %>% select(c("Phylum", "Class", "Order", "Family", "Genus"))
+dat <- selected_data %>% separate(tax, sep = ";",
+    into = c(NA, NA, "phylum", "class", "order", "family", "genus"))
+
+head(dat)
+```
+```{R}
+tax_data <- dat %>% select(c("phylum", "class", "order", "family", "genus"))
 
 tax_ranks <- colnames(tax_data)
 
 tax_data <- tax_table(tax_data)
-```
-```{R}
+
 dimnames(tax_data)[[2]] <- tax_ranks
 
 head(tax_data)
 ```
 ```{R}
-# first, extract all columns starting with 'barcode'
-otu_tab <- df_cleaned %>% select(starts_with("barcode"))
+# first, extract all columns starting with 'barcode' e.g. our samples
+otu_tab <- dat %>% select(starts_with("barcode"))
 
 # now we convert it to an otuTable object
 # the 'taxa_are_rows' argument tells phyloseq which orientation our data are in
@@ -92,46 +80,43 @@ otu_tab <- otu_table(otu_tab, taxa_are_rows = T)
 
 head(otu_tab)
 ```
+
 ```{R}
 microbiome <- phyloseq(otu_tab, tax_data)
 
-microbiome # prints a nice summary of the data
+microbiome # prints a nice summary of the data.
+
 head(otu_table(microbiome))
+
 head(tax_table(microbiome))
-```
-```{R}
-# Can change which taxonomic rank the plot shows
-plot_bar(microbiome, fill = "Phylum")
+
+plot_bar(microbiome, fill = "phylum")
 ```
 
-##### Presented here is a visual representation in the form of a stacked bar chart showcasing the prevalence of different bacterial phyla across multiple samples. Each bar is color-coded to denote a specific phylum, and the length of each color segment indicates its abundance in the respective sample. This informative tool aids in comprehending the diversity and relative prevalence of various bacteria in each sample, while the array of colors within each bar offers valuable insights into the intricacies of the microbial ecosystem. This knowledge is crucial for ecological and biological studies where accurate understanding of the makeup of microbial communities is paramount.
+##### Figure 1. This shows a stacked bar chart to visualise the composition of microbial communities within different samples at a specific taxonomic level, in this case, the phylum. In this stacked bar chart. The x-axis represents different samples labelled barcode01, barcode02, etc. The y-axis shows the abundance, which is usually the number of sequences or reads assigned to each taxonomic group within the sample, indicating the presence and quantity of the microbes. Each coloured segment of the bar represents a different phylum. The height of the segment is proportional to the abundance of that phylum in the sample. The legend on the right matches the colour coding in the bars to the phylum names, allowing you to identify which colours correspond to which microbial groups.
+sample_sums(microbiome) 
 
-
-```{R}
-sample_sums(microbiome) # shows the number of sequences in each sample
-```
 ```{R}
 rarefiedData <- rarefy_even_depth(microbiome,
     sample.size = min(sample_sums(microbiome)), replace = F)
-## You set `rngseed` to FALSE. Make sure you've set & recorded
-##  the random seed of your session for reproducibility.
-## See `?set.seed`
-## ...
+
 sample_sums(rarefiedData)
-## barcode01 barcode02 barcode03 barcode04 barcode10 
-##     50947     50947     50947     50947     50947
+
+estimate_richness(rarefiedData)
+
+rarefiedData <- rarefy_even_depth(microbiome,
+    sample.size = min(sample_sums(microbiome)), replace = F)
+sample_sums(rarefiedData)
 
 estimate_richness(rarefiedData) # summarises the diversity of each sample
 
-# Calculate species richness
 richness_data <- estimate_richness(rarefiedData, measures = c("ACE", "Shannon"))
 
 # View the first few lines of the diversity data
 head(richness_data)
-
 ```
+
 ```{R}
-# Biodiversity metrics
 barcode_metrics <- data.frame(
   Barcode = c("barcode01", "barcode03"),
   ACE = c(1214.884, 1304.168),
@@ -147,37 +132,16 @@ difference_shannon <- barcode_metrics$Shannon[barcode_metrics$Barcode == "barcod
 
 # Print the observed differences
 print(paste("Difference in ACE between barcode03 and barcode01:", difference_ace))
+
 print(paste("Difference in Shannon index between barcode03 and barcode01:", difference_shannon))
-
 ```
 ```{R}
 # Biodiversity metrics
 barcode_metrics <- data.frame(
-  Barcode = c("barcode04", "barcode10"),
-  ACE = c(1121.175, 1206.746), # ACE values for barcode04 and barcode10
-  Shannon = c(4.840777, 5.355481) # Shannon values for barcode04 and barcode10
-)
-
-# Descriptive comparison
-difference_ace <- barcode_metrics$ACE[barcode_metrics$Barcode == "barcode10"] - 
-                  barcode_metrics$ACE[barcode_metrics$Barcode == "barcode04"]
-
-difference_shannon <- barcode_metrics$Shannon[barcode_metrics$Barcode == "barcode10"] - 
-                      barcode_metrics$Shannon[barcode_metrics$Barcode == "barcode04"]
-
-# Print the observed differences
-print(paste("Difference in ACE between barcode10 and barcode04:", difference_ace))
-print(paste("Difference in Shannon index between barcode10 and barcode04:", difference_shannon))
-
-```
-```{R}
-# Biodiversity metrics
-barcode_metrics <- data.frame(
-  Barcode = c("barcode02", "barcode05"),
+  Barcode = c("barcode04", "barcode05"),
   ACE = c(1460.731, 1071.254), # ACE values for barcode02 and barcode05
   Shannon = c(5.199304, 5.250453) # Shannon values for barcode02 and barcode05
 )
-
 # Descriptive comparison
 difference_ace <- barcode_metrics$ACE[barcode_metrics$Barcode == "barcode05"] - 
                   barcode_metrics$ACE[barcode_metrics$Barcode == "barcode02"]
@@ -187,188 +151,148 @@ difference_shannon <- barcode_metrics$Shannon[barcode_metrics$Barcode == "barcod
 
 # Print the observed differences
 print(paste("Difference in ACE between barcode05 and barcode02:", difference_ace))
+
 print(paste("Difference in Shannon index between barcode05 and barcode02:", difference_shannon))
 ```
 ```{R}
-# Load the ggplot2 package
-library(ggplot2)
+grouped_richness <- richness_data %>%
+  mutate(Group = case_when(
+    grepl("barcode01|barcode04", rownames(.)) ~ "Garden",
+    grepl("barcode02|barcode03", rownames(.)) ~ "University",
+    TRUE ~ as.character(rownames(.))  # This line is optional, keeps other row names as they are
+  ))
+# To view the first few rows of the grouped data
+head(grouped_richness)
+```
+```{R}
+garden_values <- filter(grouped_richness, Group == "Garden")$ACE
+university_values <- filter(grouped_richness, Group == "University")$ACE
 
-# Create a data frame with your data
-data <- data.frame(
-  Barcode = c("barcode01", "barcode02", "barcode03", "barcode04", "barcode05", "barcode10"),
-  ACE = c(1240.594, 1538.493, 1251.353, 1055.012, 1071.254, 1130.701),
-  se.ACE = c(18.95278, 22.25332, 18.53425, 17.85359, 17.39766, 17.79527),
-  Shannon = c(5.147862, 5.196808, 5.693757, 4.823278, 5.250453, 5.345040)
-)
+# Performing the t-test
+t_test_result <- t.test(garden_values, university_values)
 
-# Calculate the upper and lower limits of the error bars for ACE
-data$ACE_upper <- data$ACE + data$se.ACE
-data$ACE_lower <- data$ACE - data$se.ACE
-
-# Create the plot with error bars for ACE
-ggplot(data, aes(x = Barcode)) +
-  geom_errorbar(aes(ymin = ACE_lower, ymax = ACE_upper), width = 0.2) +
-  geom_point(aes(y = ACE), color = 'red', size = 3) +
-  geom_line(aes(y = ACE, group = 1), color = 'red') +
-  geom_point(aes(y = Shannon * 100), color = 'blue', size = 3) + # Multiplying by 100 for visualization purposes
-  geom_line(aes(y = Shannon * 100, group = 1), color = 'blue') +
-  theme_minimal() +
-  labs(title = "ACE and Shannon across Barcodes", x = "Barcode", y = "Value") +
-  scale_y_continuous(sec.axis = sec_axis(~ . / 100, name = "Shannon")) # Adding a secondary axis for Shannon
+# Viewing the results
+print(t_test_result)
 ```
 
-##### A line plot shows the variation of two alpha diversity measures, the ACE Index and the Shannon Index, across different samples labelled as barcodes. The ACE Index estimates species richness, while the Shannon Index reflects the species' abundance and evenness. The x-axis shows the sample barcodes and the y-axis displays the diversity indices. The error bars on the ACE Index indicate the variability of the estimates. The peak at barcode02 on the ACE Index line implies a higher estimated number of species there.
+```{R}
+# Extracting ACE values for each group
+garden_values <- filter(grouped_richness, Group == "Garden")$Shannon
+university_values <- filter(grouped_richness, Group == "University")$Shannon
+
+# Performing the t-test
+t_test_result <- t.test(garden_values, university_values)
+
+# Viewing the results
+print(t_test_result)
+```
 
 ```{R}
-# ... (previous code to create the data frame)
+garden_values <- grouped_richness %>% filter(Group == "Garden") %>% select(ACE) %>% unlist()
+university_values <- grouped_richness %>% filter(Group == "University") %>% select(ACE) %>% unlist()
 
-# Use ggplot2 to create the plot with ACE and Shannon
-ggplot(data, aes(x = Barcode)) +
-  # Add ACE points
-  geom_point(aes(y = ACE), color = "black") +
-  # Add error bars for ACE
-  geom_errorbar(aes(ymin = ACE_lower, ymax = ACE_upper), width = 0.2) +
-  # Add Shannon points
-  geom_point(aes(y = Shannon * 200), color = "blue", shape = 17) + # Multiplying Shannon by a factor to scale appropriately
-  # Customizations
+# Performing the t-test
+t_test_result <- t.test(garden_values, university_values)
+
+# Viewing the results
+print(t_test_result)
+```
+
+```{R}
+if (!"Barcode" %in% colnames(richness_data)) {
+  richness_data$Barcode <- rownames(richness_data)
+}
+
+# Create the plot
+ggplot(richness_data, aes(x = Barcode)) +
+  geom_errorbar(aes(ymin = ACE - se.ACE, ymax = ACE + se.ACE), width = 0.2, color = "black") +
+  geom_point(aes(y = ACE), color = "darkorange", size = 4) +  # Changed color for contrast and increased size
+  geom_line(aes(y = ACE, group = 1), color = "darkorange") +  # Matched line color with points
+  geom_point(aes(y = Shannon * 200), color = "deepskyblue", shape = 18, size = 4) +  # Changed color for contrast and shape
+  geom_line(aes(y = Shannon * 200, group = 2), color = "deepskyblue") +  # Matched line color with points
+  geom_text(aes(y = ACE, label = round(ACE, 1)), vjust = -2, color = "darkorange") +  # Added data labels for ACE
+  geom_text(aes(y = Shannon * 200, label = round(Shannon, 2)), vjust = 2, color = "deepskyblue") +  # Added data labels for Shannon
   theme_minimal() +
-  labs(title = "Alpha Diversity Measures for Samples", x = "Barcode", y = "ACE") +
-  # Adjust the secondary axis for the Shannon index
+  labs(title = "Alpha Diversity Measures for Samples", x = "Barcode", y = "ACE and Shannon Index") +
   scale_y_continuous(
     name = "ACE",
-    sec.axis = sec_axis(~ . / 200, name="Shannon") # Adjust this transformation to match the scale of Shannon
+    sec.axis = sec_axis(~ . / 200, name = "Shannon Index")  # Labelled the secondary axis more clearly
+  ) +
+  theme(
+    plot.title = element_text(hjust = 0.5),  # Centered the plot title
+    axis.title.y = element_text(color = "darkorange"),  # Colored y-axis title to match ACE points
+    axis.title.y.right = element_text(color = "deepskyblue")  # Colored secondary y-axis title to match Shannon points
   )
-
-# Display the plot
-ggsave("alpha_diversity_plot.png", width = 10, height = 6, dpi = 300)
 ```
 
-##### The graph presents a comparative analysis of alpha diversity within samples using two metrics: the ACE Index and the Shannon Index. The ACE Index, represented by black error bars, estimates species richness with a focus on rare species, while the Shannon Index, indicated by blue triangles, evaluates species' abundance and evenness. The x-axis labels 'barcode01' through 'barcode10' likely denote individual samples or sequences, and the dual y-axes allow for a direct comparison between the two indices. This visualization aids in discerning the biodiversity of each sample, where higher values on both indices indicate greater diversity. The error bars capture variability in the ACE Index, which provides insight into the confidence of these estimations.
+##### Figure 2. The graph is a dual-axis combination chart that presents a comparative analysis of microbial diversity across four samples, each point denoted by barcodes ranging from barcode01 to barcode04. On the horizontal axis marked “Barcode,” the samples are individually listed. At the same time, the vertical axes represent two key diversity indices: the ACE index on the left and the Shannon index on the right. The ACE index, shown by an orange line with square markers, estimates the species richness within the microbial community. Conversely, the blue line with diamond markers traces the Shannon index, capturing species’ diversity and evenness. Error bars associated with each data point reflect the standard error of the mean, highlighting the reliability of the measurements. The graph reveals notable differences between the samples, with barcode02 exhibiting the highest species richness according to the ACE index, whereas barcode03 has the highest Shannon diversity, indicating a more even spread of species. In contrast, barcode04 has the lowest values for both indices, implying a reduced richness and evenness.
+
 ```{R}
-# First, create the data frame with your data
-data <- data.frame(
-  Barcode = c("barcode01", "barcode02", "barcode03", "barcode04", "barcode05", "barcode10"),
-  ACE = c(1240.594, 1538.493, 1251.353, 1055.012, 1071.254, 1130.701),
-  Shannon = c(5.147862, 5.196808, 5.693757, 4.823278, 5.250453, 5.345040)
+# Create the data frame with your new data
+richness_data <- data.frame(
+  Barcode = c("barcode01", "barcode03", "barcode04", "barcode02"),
+  ACE = c(2522.621, 2610.901, 2366.218, 3100.111),
+  se.ACE = c(24.93419, 25.25875, 24.35691, 27.67502),
+  Shannon = c(5.199885, 5.753301, 4.879570, 5.260288),
+  Group = c("Garden", "University", "Garden", "University")
 )
 
 # Descriptive statistics for ACE
-ace_mean <- mean(data$ACE)
-ace_sd <- sd(data$ACE)
-ace_se <- ace_sd / sqrt(length(data$ACE))
+ace_mean <- mean(richness_data$ACE)
+ace_sd <- sd(richness_data$ACE)
+# Standard Error is already provided in the dataset as se.ACE
+ace_se <- mean(richness_data$se.ACE)
 
 # Descriptive statistics for Shannon
-shannon_mean <- mean(data$Shannon)
-shannon_sd <- sd(data$Shannon)
-shannon_se <- shannon_sd / sqrt(length(data$Shannon))
+shannon_mean <- mean(richness_data$Shannon)
+shannon_sd <- sd(richness_data$Shannon)
+shannon_se <- shannon_sd / sqrt(length(richness_data$Shannon))
 
 # Output the descriptive statistics
 cat("Descriptive Statistics for ACE:\n")
+
 cat("Mean:", ace_mean, "SD:", ace_sd, "SE:", ace_se, "\n\n")
 
 cat("Descriptive Statistics for Shannon:\n")
+
 cat("Mean:", shannon_mean, "SD:", shannon_sd, "SE:", shannon_se, "\n")
-```
-```{R}
+
 nmdsResult <- ordinate(rarefiedData, "NMDS", "bray")
-```
-```{R}
 plot_ordination(rarefiedData, nmdsResult, type = "sample")
 ```
 
-##### The scatter plot provided depicts Non-metric Multidimensional Scaling (NMDS), a technique that reduces multidimensional data into two dimensions for visual representation. The two axes, NMDS1 and NMDS2, signify two dimensions of variation based on ranked dissimilarities among data points. Each point on the plot represents an individual sample, with proximity indicating similarity; closer points suggest greater similarity. This plot is useful in identifying clusters or gradients, indicating patterns or groupings within the data. However, detailed interpretation of the plot's structure is limited without additional annotations or a stress value. The significance of this visualization lies in its ability to simplify complex relationships within high-dimensional data.
-
 ```{R}
-df <- data.frame(
-  tax = c(
-    "Bacteria;Bacteria_none;Proteobacteria;Deltaproteobacteria;Myxococcales;Labilitrichaceae;Labilithrix",
-    "Bacteria;Bacteria_none;Acidobacteria;Blastocatellia;Blastocatellales;Pyrinomonadaceae;Brevitalea",
-    "Bacteria;Bacteria_none;Proteobacteria;Betaproteobacteria;Burkholderiales;Burkholderiales_Incertae_sedis;Aquabacterium",
-    "Bacteria;Bacteria_none;Proteobacteria;Deltaproteobacteria;Syntrophales;Syntrophaceae;Desulfomonile",
-    "Bacteria;Bacteria_none;Firmicutes;Bacilli;Bacillales;Bacillaceae;Peribacillus",
-    "Bacteria;Bacteria_none;Bacteroidota;Bacteroidia;Marinilabiliales;Prolixibacteraceae;Maribellus",
-    "Bacteria;Bacteria_none;Proteobacteria;Gammaproteobacteria;Xanthomonadales;Xanthomonadaceae;Stenotrophomonas",
-    "Bacteria;Bacteria_none;Acidobacteria;Thermoanaerobaculia;Thermoanaerobaculales;Thermoanaerobaculaceae;Thermoanaerobaculum",
-    "Bacteria;Bacteria_none;Proteobacteria;Deltaproteobacteria;Myxococcales;Polyangiaceae;Chondromyces",
-    "Bacteria;Bacteria_none;Proteobacteria;Alphaproteobacteria;Hyphomicrobiales;Rhizobiaceae;Rhizobium"
-  ),
-  barcode01 = c(974, 3053, 353, 592, 2524, 0, 17, 725, 528, 365),
-  barcode03 = c(3261, 1356, 3797, 4568, 2483, 326, 7595, 763, 1822, 0)
-)
+install.packages("ggrepel")
+installed.packages("vegan")
+library(ggrepel)
+library(vegan)
+ordination_data <- scores(nmdsResult)
 
-# Define a function to extract the taxonomic level
-get_taxonomic_level <- function(tax) {
-  components <- unlist(strsplit(tax, ";"))
-  if (length(components) >= 4) {
-    return(components[4])  
-  } else {
-    return("Unclassified")
-  }
-}
+ordination_sites <- scores(nmdsResult, display = "sites")
 
-# Add a column for taxonomic level
-df <- df %>%
-  mutate(taxonomic_level = sapply(df$tax, get_taxonomic_level))
+# Create a data frame from the ordination site scores
+ordination_df <- as.data.frame(ordination_sites)
 
-# Aggregate data at the taxonomic level
-aggregated_data <- df %>%
-  group_by(taxonomic_level) %>%
-  summarize(abundance_01 = sum(barcode01), abundance_03 = sum(barcode03)) %>%
-  ungroup()
+nmds_plot <- ggplot(ordination_df, aes(x = NMDS1, y = NMDS2)) +
+  geom_point(size = 3, alpha = 0.7) +  # Adjust point size and transparency
+  geom_text_repel(aes(label = rownames(ordination_df)), size = 3, max.overlaps = 5) +  # Use row names for labels
+  theme_minimal() +  # Minimal theme for the plot
+  labs(title = "NMDS Plot of Microbial Communities", x = "NMDS Axis 1", y = "NMDS Axis 2") +
+  theme(legend.position = "none") 
 
-# Create the bar plot
-ggplot(aggregated_data, aes(x = reorder(taxonomic_level, -abundance_01), fill = taxonomic_level)) +
-  geom_bar(aes(y = abundance_01), stat = "identity", position = "dodge", width = 0.7) +
-  geom_bar(aes(y = abundance_03), stat = "identity", position = "dodge", width = 0.5) +
-  scale_fill_manual(values = rainbow(length(unique(aggregated_data$taxonomic_level)))) + 
-  theme_minimal() +
-  labs(x = "Taxonomic Level", y = "Abundance", title = "Abundance of Bacteria by Taxonomic Level for Barcodes 1 and 3") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Diagonal x-axis labels for better readability
-
-
+# Print the plot
+print(nmds_plot)
 ```
 
-##### The bar chart displays the abundance of bacterial classes in two different samples, barcode01 and barcode03, which possibly represent two distinct environments. Different colors correspond to various bacterial classes, with the legend on the right mapping these colors to their respective classes. The graph shows a stark contrast in the distribution and prevalence of bacterial taxa between the two samples, with some classes such as "Alphaproteobacteria" and "Gammaproteobacteria" being particularly prominent. This visualization helps to discern the dominant bacterial classes in each environment.
-```{R}
-library(tidyr)
-# New sample data with barcode01 and barcode03
-df <- data.frame(
-  tax = c(
-    "Bacteria;Bacteria_none;Proteobacteria;Deltaproteobacteria;Myxococcales;Labilitrichaceae;Labilithrix",
-    "Bacteria;Bacteria_none;Acidobacteria;Blastocatellia;Blastocatellales;Pyrinomonadaceae;Brevitalea",
-    "Bacteria;Bacteria_none;Proteobacteria;Betaproteobacteria;Burkholderiales;Burkholderiales_Incertae_sedis;Aquabacterium",
-    "Bacteria;Bacteria_none;Proteobacteria;Deltaproteobacteria;Syntrophales;Syntrophaceae;Desulfomonile",
-    "Bacteria;Bacteria_none;Firmicutes;Bacilli;Bacillales;Bacillaceae;Peribacillus",
-    "Bacteria;Bacteria_none;Bacteroidota;Bacteroidia;Marinilabiliales;Prolixibacteraceae;Maribellus",
-    "Bacteria;Bacteria_none;Proteobacteria;Gammaproteobacteria;Xanthomonadales;Xanthomonadaceae;Stenotrophomonas",
-    "Bacteria;Bacteria_none;Acidobacteria;Thermoanaerobaculia;Thermoanaerobaculales;Thermoanaerobaculaceae;Thermoanaerobaculum",
-    "Bacteria;Bacteria_none;Proteobacteria;Deltaproteobacteria;Myxococcales;Polyangiaceae;Chondromyces",
-    "Bacteria;Bacteria_none;Proteobacteria;Alphaproteobacteria;Hyphomicrobiales;Rhizobiaceae;Rhizobium"
-  ),
-  barcode01 = c(974, 3053, 353, 592, 2524, 0, 17, 725, 528, 365),
-  barcode03 = c(3261, 1356, 3797, 4568, 2483, 326, 7595, 763, 1822, 0)
-)
-
-# Prepare the data for plotting
-df_long <- df %>%
-  gather(key = "barcode", value = "abundance", -tax) %>%
-  mutate(taxonomic_level = sapply(strsplit(as.character(tax), ";"), function(x) x[4]))
-
-# Adjusting the colors to match the number of taxonomic levels
-color_palette <- c("blue", "orange", "green", "red", "purple", "brown", "pink", "grey", "yellow", "cyan")
-
-# Create the bar plot
-ggplot(df_long, aes(x = taxonomic_level, y = abundance, fill = barcode)) +
-  geom_bar(stat = "identity", position = "dodge") +
-  scale_fill_manual(values = color_palette[1:length(unique(df_long$taxonomic_level))]) +
-  labs(x = "Taxonomic Level", y = "Abundance", title = "Abundance of Bacteria by Taxonomic Level for Barcodes 1 and 3") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+##### Figure 3. The NMDS ordination plot represents a non-metric multidimensional scaling analysis, plotting the similarity of microbial communities across samples identified by barcodes. Points on the graph correspond to samples (barcodes), with proximity indicating similar microbial composition. Axes NMDS 1 and 2 display gradients of dissimilarity, differentiating the microbial communities. The closer the two points are on the plot, the more similar their microbial community composition is. The clustering of ‘barcode01’ and ‘barcode04’ suggests a likeness between their microbial profiles, contrasting with the more distinct communities represented by ‘barcode02’ and ‘barcode03.’
+classData <- tax_glom(rarefiedData, taxrank = "class")
+corResult <- cor(t(otu_table(classData)))
+heatmap(corResult)
 ```
 
-##### This chart compares the abundance of bacterial classes in two samples, barcode01 and barcode03, from different environments. Blue bars represent barcode01, a garden sample, and orange bars represent barcode03, a campus sample. The height of the bars shows the prevalence of each class, with the tallest bars indicating the most abundant classes. Differences in bar heights suggest environmental impacts on bacterial community structures. The chart summarizes bacterial diversity and abundance, highlighting dominant taxa in each environment.
+##### Figure 4. The heatmap represents microbial community structure across various samples, denoted along the bottom horizontal axis. Each column in this heatmap corresponds to a different sample, while each row represents a different microbial species, as indicated on the right vertical axis. The colour gradient, ranging from light to dark, signifies the abundance level of each species within a sample, with darker tones representing higher abundance. The dendrograms along the top and left side of the heatmap showcase the hierarchical clustering of samples and species, respectively. These branching structures illustrate the relationships based on similarity in species composition (left dendrogram) and similarity in sample profiles (top dendrogram).
+
 ```{R}
-# Sample data
 df <- data.frame(
   tax = c(
     "Bacteria;Bacteria_none;Acidobacteria;Vicinamibacteria;Vicinamibacterales;Vicinamibacteraceae;Vicinamibacter",
@@ -382,60 +306,8 @@ df <- data.frame(
     "Bacteria;Bacteria_none;Proteobacteria;Epsilonproteobacteria;Campylobacterales;Thiovulaceae;Sulfurimonas",
     "Bacteria;Bacteria_none;Acidobacteria;Acidobacteriia;Bryobacterales;Bryobacteraceae;Paludibaculum"
   ),
-  barcode04 = c(62888, 87607, 44558, 43361, 31858, 2193, 11515, 30520, 8, 4425),
-  barcode10 = c(23479, 1646, 6639, 1264, 1043, 5357, 9403, 1257, 2, 4746)
-)
-
-# Define a function to extract the taxonomic level
-get_taxonomic_level <- function(tax) {
-  components <- unlist(strsplit(tax, ";"))
-  if (length(components) >= 4) {
-    return(components[4]) 
-  } else {
-    return("Unclassified")
-  }
-}
-
-# Add a column for taxonomic level
-df <- df %>%
-  mutate(taxonomic_level = sapply(df$tax, get_taxonomic_level))
-
-# Aggregate data at the taxonomic level
-aggregated_data <- df %>%
-  group_by(taxonomic_level) %>%
-  summarize(abundance_04 = sum(barcode04), abundance_10 = sum(barcode10)) %>%
-  ungroup()
-
-# Create the bar plot
-ggplot(aggregated_data, aes(x = reorder(taxonomic_level, -abundance_04), fill = taxonomic_level)) +
-  geom_bar(aes(y = abundance_04), stat = "identity", position = "dodge", width = 0.7) +
-  geom_bar(aes(y = abundance_10), stat = "identity", position = "dodge", width = 0.5) +
-  scale_fill_manual(values = rainbow(length(unique(aggregated_data$taxonomic_level)))) +  
-  theme_minimal() +
-  labs(x = "Taxonomic Level", y = "Abundance", title = "Abundance of Bacteria by Taxonomic Level for Barcodes 4 and 10") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Diagonal x-axis labels for better readability
-
-```
-
-##### The bar chart compares the abundance of bacterial classes in two different samples, barcode04 and barcode10, indicated by different colors in the legend. While "Alphaproteobacteria" dominates in both samples, the chart reveals significant variation in the quantity of bacterial classes between the two, with "Acidobacteria," "Bacilli," and "Deltaproteobacteria" present in varying amounts. This visualization provides an easy-to-read comparison of bacterial diversity in the samples.
-```{R}
-
-# Updated sample data with barcode04 and barcode10
-df <- data.frame(
-  tax = c(
-    "Bacteria;Bacteria_none;Acidobacteria;Vicinamibacteria;Vicinamibacterales;Vicinamibacteraceae;Vicinamibacter",
-    "Bacteria;Bacteria_none;Proteobacteria;Alphaproteobacteria;Hyphomicrobiales;Xanthobacteraceae;Pseudolabrys",
-    "Bacteria;Bacteria_none;Proteobacteria;Alphaproteobacteria;Hyphomicrobiales;Nitrobacteraceae;Bradyrhizobium",
-    "Bacteria;Bacteria_none;Proteobacteria;Alphaproteobacteria;Hyphomicrobiales;Hyphomicrobiaceae;Rhodoplanes",
-    "Bacteria;Bacteria_none;Actinobacteria;Rubrobacteria;Gaiellales;Gaiellaceae;Gaiella",
-    "Bacteria;Bacteria_none;Firmicutes;Bacilli;Bacillales;Planococcaceae;Sporosarcina",
-    "Bacteria;Bacteria_none;Proteobacteria;Deltaproteobacteria;Myxococcales;Kofleriaceae;Haliangium",
-    "Bacteria;Bacteria_none;Proteobacteria;Alphaproteobacteria;Hyphomicrobiales;Hyphomicrobiaceae;Methylothermalis",
-    "Bacteria;Bacteria_none;Proteobacteria;Epsilonproteobacteria;Campylobacterales;Thiovulaceae;Sulfurimonas",
-    "Bacteria;Bacteria_none;Acidobacteria;Acidobacteriia;Bryobacterales;Bryobacteraceae;Paludibaculum"
-  ),
-  barcode04 = c(62888, 87607, 44558, 43361, 31858, 2193, 11515, 30520, 8, 4425),
-  barcode10 = c(23479, 1646, 6639, 1264, 1043, 5357, 9403, 1257, 2, 4746)
+  barcode02 = c(21467, 36614, 16041, 8632, 13659, 1628, 14892, 4695, 5, 16358),
+  barcode04 = c(345, 52, 31, 92, 31, 113, 1011, 75, 33300, 325)
 )
 
 # Prepare the data for plotting
@@ -446,18 +318,15 @@ df_long <- df %>%
 # Create the bar plot
 ggplot(df_long, aes(x = taxonomic_level, y = abundance, fill = barcode)) +
   geom_bar(stat = "identity", position = "dodge") +
-  scale_fill_manual(values = c("blue", "orange")) +
+  scale_fill_manual(values = c("blue", "orange", "red", "green", "gray")) + # Add more colors if needed
   labs(x = "Taxonomic Level", y = "Abundance", title = "Abundance of Bacteria by Taxonomic Level") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
 ```
 
-##### This bar chart provides a side-by-side comparison of the abundance of bacterial taxa across different classes in two samples, barcode04 (blue bars) and barcode10 (orange bars). While "Alphaproteobacteria" dominates in barcode04, barcode10 shows a significant presence of "Vicinamibacteria." The height difference in bar colors indicates differences in bacterial composition between the two samples. Overall, this visualization highlights the most prevalent bacterial classes in each sample and the variation in their distribution. However, it does not include any statistical significance and only serves as a visual summary of observed abundances.
+##### Figure 5. The bar represents the occurrence count of bacteria across diverse taxonomic classifications. The X-axis represents the taxonomic levels of sampled bacteria. The Y-axis indicates the abundance of bacteria, determined by the counts within the sample. Each bar corresponds to the abundance of bacteria at a specific taxonomic level for a given barcode, with the tallest bars denoting the most abundant taxonomic groups within each barcode category. Notably, Alphaproteobacteria was the most abundant group in barcode02, while Epsilonproteobacteria was the most abundant in barcode04.
 
 ```{R}
-
-# Updated sample data with the new abundance data for barcode02 and barcode05
 df <- data.frame(
   tax = c(
     "Bacteria;Bacteria_none;Acidobacteria;Vicinamibacteria;Vicinamibacterales;Vicinamibacteraceae;Vicinamibacter",
@@ -471,123 +340,36 @@ df <- data.frame(
     "Bacteria;Bacteria_none;Proteobacteria;Epsilonproteobacteria;Campylobacterales;Thiovulaceae;Sulfurimonas",
     "Bacteria;Bacteria_none;Acidobacteria;Acidobacteriia;Bryobacterales;Bryobacteraceae;Paludibaculum"
   ),
-  barcode02 = c(345, 52, 31, 92, 31, 113, 1011, 75, 33300, 325),
-  barcode05 = c(664, 168, 302, 269, 85, 199, 407, 158, 0, 99)
+  barcode01 = c(28213, 6073, 7734, 8797, 7951, 39851, 9114, 4799, 2, 4293),
+  barcode03 = c(62888, 87607, 44558, 43361, 31858, 2193, 11515, 30520, 8, 4425)
 )
 
-# Add a column for taxonomic level
-df <- df %>%
-  mutate(taxonomic_level = sapply(df$tax, get_taxonomic_level))
-
-# Aggregate data at the taxonomic level for barcode02 and barcode05
-aggregated_data <- df %>%
-  group_by(taxonomic_level) %>%
-  summarize(abundance_02 = sum(barcode02), abundance_05 = sum(barcode05)) %>%
-  ungroup()
-
-# Define a color palette with enough colors for each taxonomic level
-num_of_tax_levels <- length(unique(aggregated_data$taxonomic_level))
-color_palette <- rainbow(num_of_tax_levels)
-
-# Create the bar plot for barcode02 and barcode05
-ggplot(aggregated_data, aes(x = reorder(taxonomic_level, -abundance_02), fill = taxonomic_level)) +
-  geom_bar(aes(y = abundance_02), stat = "identity", position = "dodge", width = 0.7) +
-  geom_bar(aes(y = abundance_05), stat = "identity", position = "dodge", width = 0.5) +
-  scale_fill_manual(values = color_palette) +  # Use the defined color palette
-  theme_minimal() +
-  labs(x = "Taxonomic Level", y = "Abundance", title = "Abundance of Bacteria by Taxonomic Level for Barcodes 2 and 5") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))  # Diagonal x-axis labels for better readability
-
-```
-```{R}
-
-# Updated sample data with barcode02 and barcode05
-df <- data.frame(
-  tax = c(
-    "Bacteria;Bacteria_none;Acidobacteria;Vicinamibacteria;Vicinamibacterales;Vicinamibacteraceae;Vicinamibacter",
-    "Bacteria;Bacteria_none;Proteobacteria;Alphaproteobacteria;Hyphomicrobiales;Xanthobacteraceae;Pseudolabrys",
-    "Bacteria;Bacteria_none;Proteobacteria;Alphaproteobacteria;Hyphomicrobiales;Nitrobacteraceae;Bradyrhizobium",
-    "Bacteria;Bacteria_none;Proteobacteria;Alphaproteobacteria;Hyphomicrobiales;Hyphomicrobiaceae;Rhodoplanes",
-    "Bacteria;Bacteria_none;Actinobacteria;Rubrobacteria;Gaiellales;Gaiellaceae;Gaiella",
-    "Bacteria;Bacteria_none;Firmicutes;Bacilli;Bacillales;Planococcaceae;Sporosarcina",
-    "Bacteria;Bacteria_none;Proteobacteria;Deltaproteobacteria;Myxococcales;Kofleriaceae;Haliangium",
-    "Bacteria;Bacteria_none;Proteobacteria;Alphaproteobacteria;Hyphomicrobiales;Hyphomicrobiaceae;Methylothermalis",
-    "Bacteria;Bacteria_none;Proteobacteria;Epsilonproteobacteria;Campylobacterales;Thiovulaceae;Sulfurimonas",
-    "Bacteria;Bacteria_none;Acidobacteria;Acidobacteriia;Bryobacterales;Bryobacteraceae;Paludibaculum"
-  ),
-  barcode02 = c(345, 52, 31, 92, 31, 113, 1011, 75, 33300, 325),
-  barcode05 = c(664, 168, 302, 269, 85, 199, 407, 158, 0, 99)
-)
-
-# Prepare the data for plotting for barcodes 2 and 5
+# Prepare the data for plotting
 df_long <- df %>%
   gather(key = "barcode", value = "abundance", -tax) %>%
   mutate(taxonomic_level = sapply(strsplit(as.character(tax), ";"), function(x) x[4]))
 
-# Adjusting the colors to match the number of taxonomic levels
-# Ensure the color palette has enough colors for each level
-color_palette <- rainbow(length(unique(df_long$taxonomic_level)))
-
-# Create the bar plot for barcodes 2 and 5
+# Create the bar plot
 ggplot(df_long, aes(x = taxonomic_level, y = abundance, fill = barcode)) +
   geom_bar(stat = "identity", position = "dodge") +
-  scale_fill_manual(values = color_palette) +  # Use the defined color palette
-  labs(x = "Taxonomic Level", y = "Abundance", title = "Abundance of Bacteria by Taxonomic Level for Barcodes 2 and 5") +
+  scale_fill_manual(values = c("blue", "orange", "red", "green", "gray")) + # Add more colors if needed
+  labs(x = "Taxonomic Level", y = "Abundance", title = "Abundance of Bacteria by Taxonomic Level") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
-##### This bar chart provides a side-by-side comparison of the abundance of bacterial taxa across different classes in two samples, barcode04 (blue bars) and barcode10 (orange bars). While "Alphaproteobacteria" dominates in barcode04, barcode10 shows a significant presence of "Vicinamibacteria." The height difference in bar colors indicates differences in bacterial composition between the two samples. Overall, this visualization highlights the most prevalent bacterial classes in each sample and the variation in their distribution. 
+##### Figure 6. The bar chart represents the occurrence count of bacteria across diverse taxonomic classifications. The X-axis represents the taxonomic levels of sampled bacteria. The Y-axis indicates the abundance of bacteria, determined by the counts within the sample. Each bar corresponds to the abundance of bacteria at a specific taxonomic level for a given barcode, with the tallest bars denoting the most abundant taxonomic groups within each barcode category. The orange colour represents barcode 03, and the blue colour represents barcode 01. Notably, Alphaproteobacteria was the most abundant group in barcode 03, while Bacilli was the most abundant in barcode 01.
+
 ```{R}
-
-# Subset the microbiome data for the different groups of barcodes
-microbiome_1_3 <- prune_samples(sample_names(microbiome) %in% c("barcode01", "barcode03"), microbiome)
-microbiome_4_10 <- prune_samples(sample_names(microbiome) %in% c("barcode04", "barcode10"), microbiome)
-microbiome_2_5 <- prune_samples(sample_names(microbiome) %in% c("barcode02", "barcode05"), microbiome)
-
-# Function to plot bar plots for a phyloseq object
-plot_microbiome <- function(physeq_obj, fill_rank = "Phylum") {
-  p <- plot_bar(physeq_obj, fill = fill_rank) + 
-    theme_minimal() +
-    labs(x = "Sample", y = "Abundance") +
-    theme(axis.text.x = element_text(angle = 45, hjust = 1))
-  return(p)
-}
-
-# Create the plots
-p_1_3 <- plot_microbiome(microbiome_1_3)
-p_4_10 <- plot_microbiome(microbiome_4_10)
-p_2_5 <- plot_microbiome(microbiome_2_5)
-p_all <- plot_microbiome(microbiome)
-
-# To display the plots
-print(p_1_3)
-print(p_4_10)
-print(p_2_5)
-print(p_all)
-```
-```{R}
-
-
-df_cleaned <- tax_glom(rarefiedData, taxrank = "Class")
-
-df_cleaned <- tax_glom(rarefiedData, taxrank = "Class")
-
-corResult <- cor(t(otu_table(df_cleaned)))
-heatmap(corResult)
-
-```
-
-##### This heatmap illustrates a hierarchical clustering, which shows the expression levels or abundance of different species across various samples (along the bottom). The colour gradient from light to dark orange represents the abundance scale, with darker colours typically indicating higher values. The dendrograms along the top and side suggest that hierarchical clustering has been performed, grouping both species and samples based on the similarity of their expression patterns. Species or samples that cluster closely together have similar profiles, indicating they may be functionally related or respond similarly to the conditions tested.
-```{R}
-library(igraph)
-# OTU data
+install.packages("igraph")
+library("igraph")
 otu_data <- matrix(
   c(1, 0, 0, 0, 0, 0, 91, 12, 145, 66, 4, 28, 529, 22, 2299, 1237, 22, 35, 124, 5, 767, 236, 2, 5, 171, 2, 654, 848, 4, 8, 350, 9, 2456, 1023, 6, 15),
-  nrow = 6, ncol = 6,
+  nrow = 6, 
+  ncol = 4,  # Corrected number of columns
   dimnames = list(
-    c("sp1", "sp2", "sp3", "sp4", "sp5", "sp6"), 
-    c("barcode01", "barcode02", "barcode03", "barcode04", "barcode05", "barcode10")
+    c("sp1", "sp2", "sp3", "sp4", "sp5", "sp6"),
+    c("barcode01", "barcode02", "barcode03", "barcode04")  # Adjusted column names
   )
 )
 
@@ -605,12 +387,13 @@ taxonomy_table <- data.frame(
   row.names = c("sp1", "sp2", "sp3", "sp4", "sp5", "sp6")
 )
 
-# Create a dummy sample data
 sample_data <- data.frame(
-  SampleID = c("barcode01", "barcode02", "barcode03", "barcode04", "barcode05", "barcode10"),
-  row.names = c("barcode01", "barcode02", "barcode03", "barcode04", "barcode05", "barcode10")
+  SampleID = c("barcode01", "barcode02", "barcode03", "barcode04"),
+  row.names = c("barcode01", "barcode02", "barcode03", "barcode04")
 )
+```
 
+```{R}
 # Convert data to phyloseq object
 physeq <- phyloseq(otu_table, tax_table(as.matrix(taxonomy_table)), sample_data(sample_data))
 
@@ -624,85 +407,103 @@ adjacency_matrix <- as.matrix(distance_matrix) < 0.3
 network_graph <- graph_from_adjacency_matrix(adjacency_matrix, mode = "undirected")
 
 # Vertex names corresponding to the barcodes
-vertex_labels <- c("barcode01", "barcode02", "barcode03", "barcode04", "barcode05", "barcode10")
-
-# Plot the network with barcode labels
-plot(network_graph, vertex.label=vertex_labels,
-     vertex.color="gold", vertex.size=15, vertex.frame.color="gray",
-     edge.arrow.size=.5, edge.color="gray", edge.width=2,
-     main="Microbiome Network Graph")
-```
-
-##### This represents a microbiome network graph that displays connections and similarities among microbial communities in different barcode-labeled samples. Each node represents a sample (e.g., barcode01, barcode02, etc.), and edges indicate a significant similarity between the microbial communities of those samples. For instance, barcode04 is connected to barcode05 and barcode10, which suggests that they may have similar microbial features or share significant overlaps in their species composition. However, the absence of connections between other samples could imply either a lack of significant similarity or that they belong to different clusters or conditions.
-
-```{R}
+vertex_labels <- c("barcode01", "barcode02", "barcode03", "barcode04")
 # Taxonomy data
 taxa <- data.frame(
-  Phylum = c("Euryarchaeota", "Abditibacteriota", "Acidobacteria", "Acidobacteria", "Acidobacteria", "Acidobacteria"),
-  Class = c("Halobacteria", "Abditibacteria", "Acidobacteriia", "Acidobacteriia", "Acidobacteriia", "Acidobacteriia"),
-  Order = c("Halobacteriales", "Abditibacteriales", "Acidobacteriales", "Acidobacteriales", "Acidobacteriales", "Acidobacteriales"),
-  Family = c("Haloarculaceae", "Abitibacteriaceae", "Acidobacteriaceae", "Acidobacteriaceae", "Acidobacteriaceae", "Acidobacteriaceae"),
-  Genus = c("Haloarcula", "Abditibacterium", "Acidicapsa", "Acidipila", "Acidisarcina", "Acidobacterium")
+  Phylum = c("Euryarchaeota", "Abditibacteriota", "Acidobacteria", "Acidobacteria"),
+  Class = c("Halobacteria", "Abditibacteria", "Acidobacteriia", "Acidobacteriia"),
+  Order = c("Halobacteriales", "Abditibacteriales", "Acidobacteriales", "Acidobacteriales"),
+  Family = c("Haloarculaceae", "Abitibacteriaceae", "Acidobacteriaceae", "Acidobacteriaceae"),
+  Genus = c("Haloarcula", "Abditibacterium", "Acidicapsa", "Acidipila")
 )
 
-# Create an empty graph
-g <- graph.empty(n = 6, directed = FALSE)
+# Create a vector of labels that combines the actual genus names with barcode labels
+node_labels <- paste(taxa$Genus, c("barcode01", "barcode02", "barcode03", "barcode04"), sep="\n")
 
-# Set the names of the nodes
-V(g)$name <- taxa$Genus
+# Create a complete graph with 4 nodes
+g <- graph.full(n = 4, directed = FALSE, loops = FALSE)
 
-# Add some edges
-g <- add_edges(g, c(1,2, 1,3, 2,4, 2,5, 3,6))
-
-# Plot the graph
-plot(g, vertex.size=20, vertex.label=V(g)$name, vertex.label.cex=0.8)
-
-```
-```{R}
-
-barcode_labels <- c("barcode01", "barcode02", "barcode03", "barcode04", "barcode05", "barcode10")
-
-# Combine the genus names with the barcode labels
-node_labels <- paste(taxa$Genus, barcode_labels, sep="\n")
-
-# Create an empty graph
-g <- graph.empty(n = 6, directed = FALSE)
-
-# Set the names of the nodes
+# Set the names of the nodes to the combined genus and barcode labels
 V(g)$name <- node_labels
 
-# Add some edges
-g <- add_edges(g, c(1,2, 1,3, 2,4, 2,5, 3,6))
-
-# Plot the graph
-plot(g, vertex.size=20, vertex.label=V(g)$name, vertex.label.cex=0.8, main="Genus and Barcode Sample Network")
-```
-
-##### This image shows a network graph titled "Genus and Barcode Sample Network," which displays relationships between microbial genera and barcode-labeled samples. Each node represents a distinct microbial community sample identified by its barcode, while the genus name indicates the dominant or significant genus within that sample. The edges connecting the nodes suggest a direct association or similarity between the communities, such as shared dominant genera. This network graph helps to understand the structure and interconnectedness of microbial communities across different samples based on the presence and possible abundance of certain genera.
-```{R}
-# Taxonomy data
-taxa <- data.frame(
-  Genus = c("Haloarcula", "Abditibacterium", "Acidicapsa", "Acidipila", "Acidisarcina", "Acidobacterium")
+# Plot the network graph
+plot(g, 
+     vertex.size=20, 
+     vertex.label=V(g)$name, 
+     vertex.label.cex=0.8, 
+     vertex.label.dist=1.5, 
+     vertex.color="gold", 
+     vertex.frame.color="gray", 
+     edge.arrow.size=.5, 
+     edge.color="gray", 
+     edge.width=2,
+     main="Microbiome Network Graph"
 )
-
-# Unclassified counts for each genus
-unclassified_data <- c(28213, 6073, 7734, 8797, 7951, 39851)
-
-# Create a list of labels that include the genus name and unclassified count
-node_labels <- paste(taxa$Genus, "Unclassified:", unclassified_data, sep="\n")
-
-# Create an empty graph with 6 nodes
-g <- graph.empty(n = 6, directed = FALSE)
-
-# Set the names of the nodes
-V(g)$name <- node_labels
-
-# Add some edges (as an example)
-g <- add_edges(g, c(1,2, 1,3, 2,4, 2,5, 3,6))
-
-# Plot the graph with a title and the updated node labels
-plot(g, vertex.size=20, vertex.label=V(g)$name, vertex.label.cex=0.8, main="Genus Network with Unclassified Data")
 ```
 
-##### The image depicts a network graph called "Genus Network with Unclassified Data," which shows various microbial genera and their corresponding unclassified sequence counts. Each node represents a microbial sample labeled with genus names like "Haloarcula" and "Acidobacterium," along with the number of unclassified sequences detected. The edges connecting the nodes indicate the similarity between the samples based on their microbial content. The presence of unclassified sequences highlights the portion of the microbial community that couldn't be classified into known categories.
+##### Figure 7. This microbiome network graph demonstrates the relationships between microbial taxa within a community. Each node on the graph represents a unique microbial taxon, taxa represented: Haloarcula (barcode01), Abditibacterium (barcode02), Acidicapsa (barcode03), and Acidipila (barcode04). The edges connecting the nodes suggest potential interactions or correlations between these taxa. The positioning of the nodes with one another is based on the strength and number of their connections, reflecting the complexity of their interactions.
+
+```{R}
+selected_data <- selected_data %>% 
+  mutate(Phylum = sapply(strsplit(tax, ";"), `[`, 3),
+         Garden = barcode01 + barcode04,
+         University = barcode03 + barcode02)
+
+# Print the resulting data frame
+print(selected_data)
+```
+```{R}
+# We need to stack 'Garden' and 'University' into one column and create a group indicator
+long_data <- stack(selected_data[c("Garden", "University")])
+
+# Rename the columns for clarity
+names(long_data) <- c("Abundance", "Group")
+
+# Convert 'Group' to a factor as required for ANOVA and Tukey HSD
+long_data$Group <- as.factor(long_data$Group)
+
+# Run the ANOVA
+aov_model <- aov(Abundance ~ Group, data = long_data)
+
+# Apply the Tukey HSD test
+tukey_result <- TukeyHSD(aov_model)
+
+# Print the results
+print(tukey_result)
+```
+
+```{R}
+# Perform Kruskal-Wallis test
+kruskal_test_result <- kruskal.test(Phylum ~ University, data = selected_data)
+
+# Print the Kruskal-Wallis test result
+print(kruskal_test_result)
+```
+```{R}
+# Perform Kruskal-Wallis test
+kruskal_test_result <- kruskal.test(Phylum ~ Garden, data = selected_data)
+
+# Print the Kruskal-Wallis test result
+print(kruskal_test_result)
+```
+
+```{R}
+# 2. ANOVA Test for University
+anova_result_university <- aov(University ~ Phylum, data = selected_data)
+anova_summary_university <- summary(anova_result_university)
+
+# Extract the p-value for the University ANOVA
+p_value_university <- anova_summary_university[[1]]["Phylum", "Pr(>F)"]
+```
+
+```{R}
+# 3. Post-Hoc Test (if ANOVA is significant)
+if (p_value_university < 0.05) {
+  post_hoc_result_university <- TukeyHSD(anova_result_university)
+  print(post_hoc_result_university)
+} else {
+  print("ANOVA result for University is not significant; no post-hoc test performed.")
+}
+```
+
 
