@@ -14,6 +14,11 @@ https://rpubs.com/CT27/1204779
 * 
 ### Investigating the Impact of Genotype, Sex, and Crotonic Acid Diet on the Survival of Drosophila melanogaster Strains Against Serratia marcescens Infections
 
+##### Abstract
+
+Drosophila melanogaster is a vital model organism for genetic and microbiological research due to its genetic parallels with humans. Understanding how different genotypes, sexes, and environmental treatments affect survival under bacterial infection can provide insights into genetic resilience and susceptibility mechanisms. However, survival analysis has yet to explore the Daxx mutant genotype. This study explores the survival outcomes of Drosophila melanogaster, focusing on the Dahomey wild-type and Daxx mutants when subjected to Serratia marcescens infections and crotonic acid treatment. We show that male flies and the Dahomey genotype exhibit higher survival probabilities than female flies and Daxx mutants with a p-value of <0.0001.
+Additionally, while crotonic acid treatment did not significantly impact overall survival rates  0.323 p-values, it delayed developmental timing in Daxx mutants. These findings suggest that sex and genotype significantly influence Drosophila's resilience to bacterial infections, with males and Dahomey flies showing more excellent resistance. The study also highlights the potential physiological effects of histone crotonylation, such as delayed development. Our results underscore the importance of considering genetic and environmental factors in studying immune responses and survival, providing a foundation for future research into the molecular mechanisms underlying these differences. Further investigations could explore the specific gene expression profiles and the broader impacts of crotonylation on Drosophila physiology.
+
 ##### Introduction
 
 Drosophila melanogaster is widely used as a research model due to its genetic similarities to humans, possessing only 7,000 fewer genes (Markstein, M. 2018). The shotgun sequencing of its genome in the 2000s (Neckameyer, W.S. and Argue, K.J. 2013) has facilitated precise control of gene expression in specific cells at regulated times and levels (Pfeiffer, B.D. et al. 2010).
