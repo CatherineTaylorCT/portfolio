@@ -1,0 +1,4 @@
+Rank,Target Sequence,Genomic Location,Strand,GC Content (%),Self-Complementarity,MM0,MM1,MM2,MM3,Efficiency,MIT Specificity Score,CFD Specificity Score,Doench '16 Efficiency,Mor.-Mateos Efficiency,Doench RuleSet3 Score,Off-Targets,Restriction Enzymes
+1,CTAAACGGACAAATGGCGAAGGG,chrII:620692,+,45,3,0,0,0,0,65.85,100,100,66,34,15,0,None
+2,TTCCTGTTCGTAAATGAATGGGG,chrII:620715,-,35,0,0,0,0,0,60.31,100,100,60,18,-60,"2 (CPA2, COQ6)",TspDTI
+3,CCTAAACGGACAAATGGCGAAGG,chrII:620691,+,50,3,0,0,0,0,61.09,100,100,61,23,15,0,None

@@ -1,0 +1,169 @@
+---
+title: "sgRNA Analysis for upregulating gene BEM1 using CRISPRa"
+author: "Catherine Taylor"
+date: "2024-10-31"
+output: html_document
+---
+
+##### This project, Using CRISPRa to Investigate the Role of SCRIB Homolog Upregulation in Yeast as a Model for Cancer Therapeutics, focuses on upregulating the BEM1 gene in Saccharomyces cerevisiae using CRISPR activation (CRISPRa). BEM1 is a homolog for the tumour suppressor gene SCRIB, two processes frequently disrupted in cancer progression. The study employs a dead Cas9 (dCas9) fused with transcriptional activators like VP64 to enhance BEM1 expression, simulating therapeutic strategies to restore tumour suppressor function. Guide RNAs (gRNAs) targeting the BEM1 promoter were designed and validated using tools like CHOPCHOP and CRISPOR, ensuring high specificity (MIT and CFD scores), balanced efficiency (Doench and Mor.-Mateos scores), and minimal off-target risks.
+
+```{R}
+# Guide RNA Analysis and validation for CRISPRra upregulation of BEM1 in Saccharomyces cerevisiae (yeast). 
+
+# This analysis aims to identify the optimal guide RNA sequence among the top four ranked guides, focusing on specificity, efficiency, and off-target effects.
+
+# Load necessary libraries
+install.packages("ggcorrplot")
+library(readr)
+library(ggcorrplot)
+library(tidyr)
+library(readxl)      # For reading Excel files
+library(dplyr)       # For data manipulation
+library(ggplot2)     # For data visualisation
+library(knitr)       # For rendering tables in Markdown
+library(kableExtra)  # For enhanced table aesthetics
+library(gridExtra)   # For multi-plot layout
+```
+```{R}
+# Load the data
+gRNA_data <- read_csv("Guide_RNA_Analysis_BEM1.xlsx - Sheet1.csv")
+# Display the data table
+kable(gRNA_data) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+```
+```{R}
+# Summary statistics of the dataset
+summary(gRNA_data)
+```
+```{R}
+# Plot Doench '16, Mor.-Mateos, and RuleSet3 efficiency scores
+p1 <- ggplot(gRNA_data, aes(x = factor(Rank), y = `Doench '16 Efficiency`, fill = factor(Rank))) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Doench '16 Efficiency", x = "Guide Rank", y = "Efficiency Score") +
+  theme_minimal()
+
+p2 <- ggplot(gRNA_data, aes(x = factor(Rank), y = `Mor.-Mateos Efficiency`, fill = factor(Rank))) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Mor.-Mateos Efficiency", x = "Guide Rank", y = "Efficiency Score") +
+  theme_minimal()
+
+p3 <- ggplot(gRNA_data, aes(x = factor(Rank), y = `Doench RuleSet3 Score`, fill = factor(Rank))) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Doench RuleSet3 Score", x = "Guide Rank", y = "Efficiency Score") +
+  theme_minimal()
+
+# Arrange the plots side by side
+grid.arrange(p1, p2, p3, ncol = 3)
+```
+
+##### Figure 1 illustrates the efficiency scores for three ranked guide RNAs (gRNAs) targeting the BEM1 promoter, evaluated using three different algorithms: Doench '16 Efficiency, Mor.-Mateos Efficiency, and Doench RuleSet3 Score. The x-axis represents the guide rank (1, 2, and 3), with each rank, colour-coded (red for Rank 1, green for Rank 2, and blue for Rank 3), while the y-axis indicates the efficiency score predicted by each algorithm. The Doench '16 Efficiency panel consistently scores high for all ranks, with Rank 1 achieving the highest, suggesting strong activation potential. The Mor.-Mateos Efficiency panel reveals moderate scores, with Rank 1 outperforming the others. The Doench RuleSet3 Score panel highlights significant variability, with Rank 2 showing a negative score, indicating potential inefficiency, while Rank 1 and Rank 3 have neutral to slightly positive values. 
+
+```{R}
+# Display off-target information
+off_target_summary <- gRNA_data %>%
+  select(Rank, `Off-Targets`)
+
+kable(off_target_summary, col.names = c("Guide Rank", "Off-Target Summary")) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+```
+
+
+##### Table 1 summarises the off-target information for the three ranked guide RNAs (gRNAs) targeting the BEM1 promoter in yeast. The first column, Guide Rank, indicates the ranking of each gRNA (1, 2, or 3) based on specificity and efficiency metrics. The second column, Off-Target Summary, provides the number and details of off-target effects detected for each gRNA. Guide Rank 1 and 3 show no off-targets, making them ideal candidates for precise CRISPRa experiments with minimal unintended genome editing. In contrast, Guide Rank 2 has two identified off-targets in the exonic regions of the CPA2 and COQ6 genes, which may introduce unintended effects. 
+
+```{R}
+# Plot GC content
+ggplot(gRNA_data, aes(x = factor(Rank), y = `GC Content (%)`, fill = factor(Rank))) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "GC Content by Guide Rank", x = "Guide Rank", y = "GC Content (%)") +
+  theme_minimal()
+```
+
+##### Figure 2  bar chart illustrates the GC content (%) for each guide RNA (gRNA) ranked for targeting the BEM1 promoter in yeast. The x-axis represents the Guide Rank, which ranks gRNAs based on specificity, efficiency, and off-target analysis (Rank 1, 2, and 3). The y-axis indicates the GC Content (%), a critical factor influencing the stability and binding efficiency of gRNAs. Rank 1 has a GC content of approximately 45%, Rank 2 exhibits a lower GC content of around 35%, and Rank 3 shows the highest GC content at 50%. 
+
+```{R}
+# Plot self-complementarity
+ggplot(gRNA_data, aes(x = factor(Rank), y = `Self-Complementarity`, fill = factor(Rank))) +
+  geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Self-Complementarity by Guide Rank", x = "Guide Rank", y = "Self-Complementarity") +
+  theme_minimal()
+```
+
+##### Figure 3 bar chart depicts the Self-Complementarity scores for guide RNAs (gRNAs) ranked for targeting the BEM1 promoter in yeast. The x-axis represents the Guide Rank (Rank 1, 2, and 3), indicating the hierarchical order based on specificity, efficiency, and off-target analysis. The y-axis shows the Self-Complementarity, a measure of the tendency of a gRNA to form secondary structures, such as hairpins, due to intramolecular binding. Rank 1 and 3 exhibit a self-complementarity score of 3, indicating a moderate likelihood of forming such structures, while Rank 2 has a score of 0, suggesting no risk of secondary structure formation. 
+
+```{R}
+# Calculate correlation matrix
+cor_matrix <- cor(gRNA_data %>% select(`MIT Specificity Score`, `CFD Specificity Score`, `Doench '16 Efficiency`, `Mor.-Mateos Efficiency`, `Doench RuleSet3 Score`, `GC Content (%)`))
+
+# Plot correlation matrix
+ggcorrplot(cor_matrix, lab = TRUE, title = "Correlation Matrix of Guide RNA Metrics")
+```
+
+##### Figure 4 is a heatmap that visualises the correlation matrix of various metrics used to evaluate guide RNAs (gRNAs) for CRISPRa targeting the BEM1 promoter in yeast. The x-axis and y-axis represent the compared metrics, including MIT Specificity Score, CFD Specificity Score, Doench '16 Efficiency, Mor.-Mateos Efficiency, Doench RuleSet3 Score, and GC Content (%). The colour scale indicates the strength and direction of the correlation, ranging from red (positive correlation) to blue (negative correlation). 
+
+```{R}
+# Filter the data to identify the best guide RNA
+# Criteria: MIT Specificity Score >= 98, CFD Specificity Score = 100, Doench '16 Efficiency > 60, and no off-targets
+best_guide <- gRNA_data %>%
+  filter(`MIT Specificity Score` >= 98 & 
+         `CFD Specificity Score` == 100 & 
+         `Doench '16 Efficiency` > 60 & 
+         `Off-Targets` == "0")
+
+# Display the best guide in a formatted table
+kable(best_guide, col.names = c("Rank", "Target Sequence", "Genomic Location", "Strand", "GC Content (%)",
+                                "Self-Complementarity", "MM0", "MM1", "MM2", "MM3", 
+                                "Efficiency", "MIT Specificity Score", "CFD Specificity Score", 
+                                "Doench '16 Efficiency", "Mor.-Mateos Efficiency", 
+                                "Doench RuleSet3 Score", "Off-Targets", "Restriction Enzymes")) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+
+```
+
+
+##### Table 2 highlights the best guide RNA (gRNA) identified for CRISPRa experiments targeting the BEM1 promoter in yeast. The Rank column represents the priority of the gRNA, with Rank 1 being the most optimal. Target Sequence lists the 23-nucleotide sequence of the gRNA, while Genomic Location and Strand specify the exact position and strand targeted within the yeast genome. GC Content (%) and Self-Complementarity are important metrics affecting the stability and binding Efficiency of the gRNA. Key efficiency scores include Doench '16 Efficiency (66 for Rank 1, 61 for Rank 3), indicating moderate-to-high activation potential. MIT Specificity Score and CFD Specificity Score are 100 for these guides, reflecting perfect specificity and minimal off-target risks. Both guides have 0 off-targets, ensuring precise targeting. Restriction Enzymes list whether any enzymes overlap the sequence; here, no restriction enzymes.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

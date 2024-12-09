@@ -1,0 +1,284 @@
+
+---
+title: "BRCA2 and PIK3CA sgRNA Validation for CRISPR Knockout"
+author: "Catherine Taylor"
+date: "25 OCT 2024"
+output: html_document
+---
+
+### Firstly, CHOPCHOP and CRISPOR platforms were used to identify multiple top sgRNA sequences targeting critical regions of the BRCA2 and PIK3CA genes for CRISPR-Cas9-mediated knockout. These tools were employed to rank potential sgRNAs based on critical parameters such as specificity, predicted cutting efficiency, and off-target risk. The top three results were selected from both genes and further analysed in R studio to refine the selection process, where efficiency predictions, off-target profiles, and GC content were comprehensively compared.
+
+```{R}
+# Install the conflicted package if it's not already installed
+if (!requireNamespace("conflicted", quietly = TRUE)) {
+  install.packages("conflicted")
+}
+
+# Install and Load necessary packages
+# Install Bioconductor if not installed already
+if (!requireNamespace("BiocManager", quietly = TRUE)) {
+  install.packages("BiocManager")
+
+}
+install.packages("seqinr")
+install.packages("GGally")
+```
+
+```{R}
+# Force reinstallation of Biostrings
+BiocManager::install("Biostrings", force = TRUE)
+``` 
+
+```{R}
+# Load necessary packages
+library(Biostrings)   # For DNA sequence handling
+library(tidyverse)    # Includes ggplot2 and dplyr for data manipulation and plotting
+library(conflicted)    # Resolve conflicts explicitly
+library(seqinr)        # For sequence analysis
+library(GGally)        # For advanced visualizations
+# Set preference for conflicted functions
+conflict_prefer("filter", "dplyr")
+conflict_prefer("lag", "dplyr")
+```
+```{R}
+# Read the CSV file into a DataFrame
+file_path <- "Project_1_BRCA2_PIK3CA.csv"
+df <- read_csv(file_path)
+
+# Display the first few rows of the DataFrame to ensure it's loaded correctly
+head(df)
+```
+```{R}
+# Create a new column that combines the gene name with the index so we can identify the different sequences. 
+df <- df %>%
+  mutate(Gene_Index = paste(Gene, row_number() - 1, sep = "_")) 
+```
+```{R}
+# Plot a bar graph of Number of Off-Targets for each gene sgRNA combination
+ggplot(df, aes(x = Gene_Index, y = `Number of Off-Targets`, fill = Gene_Index)) +
+  geom_bar(stat = "identity") +
+  scale_fill_manual(values = scales::hue_pal()(length(unique(df$Gene_Index)))) + # Customize colors
+  labs(title = "Number of Off-Targets for Each Gene sgRNA Combination",
+       x = "Gene (with Index)",
+       y = "Number of Off-Targets") +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) # Rotate x-axis labels for readability
+```
+
+#### Figure 1 illustrates the number of off-target sites for each sgRNA combination targeting the BRCA2 and PIK3CA genes. The X-axis represents the gene and the specific sgRNA index (e.g., BRCA2_0, BRCA2_1, PIK3CA_3), where the indices correspond to individual sgRNA sequences evaluated for each gene. The Y-axis indicates the total number of off-target sites identified for each sgRNA, as determined through computational analysis. Different colours correspond to each gene-sgRNA pair, visually representing the relative off-target risks. The data highlights that BRCA2_2 has the highest number of off-targets, whereas BRCA2_0 and PIK3CA_3 exhibit lower off-target counts, suggesting they may be more suitable for precise genome editing.
+
+```{R}
+# Calculate GC content and create a specificity score placeholder
+df <- df %>%
+  mutate(
+    GC_content = str_count(`sgRNA Sequence`, "G|C") / str_length(`sgRNA Sequence`),
+    Specificity_score = 1 / `Number of Off-Targets`  # Assuming higher specificity with fewer off-targets
+  )
+
+# Preview the modified dataset
+head(df)
+```
+```{R}
+# Rank sgRNAs by efficiency and specificity for each gene
+ranked_sgRNA <- df %>%
+  group_by(Gene) %>%
+  arrange(desc(`Cutting Efficiency`), Specificity_score) %>%
+  dplyr::slice(1)  # Select the top sgRNA per gene
+
+# Display the ranked sgRNAs
+ranked_sgRNA
+```
+```{R}
+# Split the 'Off-Target Summary' column into separate columns for mismatches
+df <- df %>%
+  separate(`Off-Target Summary`, into = c("Mismatches_2", "Mismatches_3", "Mismatches_4"), sep = "\\|") %>%
+  mutate(
+    Mismatches_2 = as.numeric(gsub("2:", "", Mismatches_2)),
+    Mismatches_3 = as.numeric(gsub("3:", "", Mismatches_3)),
+    Mismatches_4 = as.numeric(gsub("4:", "", Mismatches_4))
+  )
+
+# Check the structure of the modified DataFrame
+head(df)
+```
+
+```{R}
+# Identify the best sgRNA for each gene based on minimal off-target mismatches
+best_sgRNA <- df %>%
+  group_by(Gene) %>%
+  arrange(Mismatches_2, Mismatches_3, Mismatches_4) %>%
+  dplyr::slice(1)  # Select sgRNA with the fewest off-targets
+
+# Display the best sgRNAs based on off-target mismatches
+best_sgRNA
+```
+```{R}
+# Calculate GC content and create a specificity score placeholder
+df <- df %>%
+  mutate(
+    GC_content = str_count(`sgRNA Sequence`, "G|C") / str_length(`sgRNA Sequence`),
+    Specificity_score = 1 / `Number of Off-Targets`  # Assuming higher specificity with fewer off-targets
+  )
+
+# Preview the modified dataset
+head(df)
+```
+```{r gc-specificity-plot, fig.width=10, fig.height=8}
+# Load ggrepel for better label management
+library(ggrepel)
+
+# Scatter plot of GC content vs Specificity Score with Gene_Index labels
+ggplot(df, aes(x = GC_content, y = Specificity_score, color = Gene)) +
+  geom_point(size = 3) +
+  geom_text_repel(aes(label = Gene_Index), size = 3, max.overlaps = Inf) +  # Add Gene_Index labels to points
+  labs(
+    title = "GC Content vs Specificity Score for sgRNAs",
+    x = "GC Content",
+    y = "Specificity Score"
+  ) +
+  scale_color_manual(values = scales::hue_pal()(length(unique(df$Gene)))) + # Different colors for each gene
+  theme_minimal()
+```
+
+
+#### Figure 2 shows a scatterplot of the relationship between GC content and specificity scores for sgRNAs targeting the BRCA2 and PIK3CA genes. The X-axis represents the GC content of each sgRNA sequence, which affects stability and efficiency in CRISPR experiments. The Y-axis displays the specificity score, which indicates how precisely the sgRNA targets the intended sequence while minimizing off-target effects. Points are colour-coded by gene, with red representing BRCA2 sgRNAs and blue representing PIK3CA sgRNAs. Notably, PIK3CA_3 exhibits a high GC content and a strong specificity score, making it a promising candidate, while BRCA2_2 also shows high GC content but lower specificity. 
+
+```{R}
+# Rank sgRNAs by Cutting Efficiency for all gene indexes in descending order
+df_sorted <- df %>%
+  arrange(desc(`Cutting Efficiency`))
+
+# Display the sorted DataFrame
+df_sorted
+```
+```{R}
+# Load the ggplot2 library for plotting
+library(ggplot2)
+
+# Create a lollipop chart showing Cutting Efficiency for each Gene_Index
+ggplot(df_sorted, aes(x = reorder(Gene_Index, `Cutting Efficiency`), y = `Cutting Efficiency`, color = Gene)) +
+  geom_segment(aes(xend = reorder(Gene_Index, `Cutting Efficiency`), yend = 0), size = 1) + # Line from x-axis to point
+  geom_point(size = 4) + # Points for each Cutting Efficiency value
+  labs(
+    title = "Ranking of sgRNAs by Cutting Efficiency",
+    x = "Gene Index (Ranked by Cutting Efficiency)",
+    y = "Cutting Efficiency"
+  ) +
+  coord_flip() + # Flip coordinates for better readability
+  theme_minimal() + # Minimal theme for clarity
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + # Rotate x-axis labels if needed
+  scale_color_manual(values = scales::hue_pal()(length(unique(df_sorted$Gene)))) # Unique colors for each Gene
+```
+
+#### Figure 3 bar plot displays the ranking of sgRNAs based on their cutting efficiency for the BRCA2 and PIK3CA genes. The X-axis represents the cutting efficiency score, which measures the likelihood of successful cleavage at the target site by CRISPR-Cas9. The Y-axis shows the sgRNA indices for each gene, ranked by their cutting efficiency. Points are color-coded by gene, with red indicating BRCA2 sgRNAs and blue indicating PIK3CA sgRNAs. Among the sgRNAs, PIK3CA_4 and PIK3CA_3 exhibit the highest cutting efficiency, close to 0.6, making them strong candidates for precise genome editing. In contrast, BRCA2_1 and BRCA2_0 show lower cutting efficiencies, suggesting they may be less effective. 
+
+```{R}
+# Create a lollipop chart showing Number of Off-Targets for each Gene_Index
+ggplot(df_sorted, aes(x = reorder(Gene_Index, `Number of Off-Targets`), y = `Number of Off-Targets`, color = Gene)) +
+  geom_segment(aes(xend = reorder(Gene_Index, `Number of Off-Targets`), yend = 0), size = 1) + # Line from x-axis to point
+  geom_point(size = 4) + # Points for each Number of Off-Targets value
+  labs(
+    title = "Ranking of sgRNAs by Number of Off-Targets",
+    x = "Gene Index (Ranked by Off-Targets)",
+    y = "Number of Off-Targets"
+  ) +
+  coord_flip() + # Flip coordinates for better readability
+  theme_minimal() + # Minimal theme for clarity
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + # Rotate x-axis labels if needed
+  scale_color_manual(values = scales::hue_pal()(length(unique(df_sorted$Gene)))) # Unique colors for each Gene
+```
+
+#### Figure 4 bar plot ranks sgRNAs by the number of off-target sites for the BRCA2 and PIK3CA genes. The X-axis represents the number of off-target sites identified for each sgRNA, which indicates potential unintended edits elsewhere in the genome. The Y-axis shows the sgRNA indices for each gene, ranked by their off-target counts. Points are colour-coded by gene, with red representing BRCA2 sgRNAs and blue representing PIK3CA sgRNAs. BRCA2_2 exhibits the highest number of off-targets, exceeding 30, while BRCA2_0 and PIK3CA_3 show the fewest off-targets, around 20, making them more favourable for precise genome editing. 
+
+```{R}
+# Efficiency prediction visualization
+# This will create a bar plot to show the predicted efficiency for each sgRNA
+ggplot(df, aes(x = reorder(Gene_Index, `Cutting Efficiency`), y = `Cutting Efficiency`, fill = Gene)) +
+  geom_bar(stat = "identity") +
+  labs(
+    title = "Predicted Efficiency for Each sgRNA",
+    x = "sgRNA (Gene Index)",
+    y = "Predicted Efficiency"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1)) + # Rotate x-axis labels for readability
+  scale_fill_viridis_d() # Use the viridis color palette
+```
+
+#### Figure 5 bar plot shows the predicted efficiency of sgRNAs targeting the BRCA2 and PIK3CA genes. The X-axis represents the sgRNA indices for each gene, and the Y-axis indicates the predicted cutting efficiency, which reflects the likelihood of successful DNA cleavage at the target site. Bars are colour-coded by gene, purple representing BRCA2 sgRNAs and yellow representing PIK3CA sgRNAs. PIK3CA_4 and PIK3CA_3 exhibit the highest predicted efficiencies, close to 0.6, making them strong candidates for CRISPR-Cas9 experiments. BRCA2_2 also shows relatively high efficiency compared to BRCA2_1 and BRCA2_0, which have lower predicted efficiencies. 
+
+```{R}
+# Compare Off-Target Risks and Efficiency Together
+# This scatter plot will visualize the trade-off between off-target risk and efficiency
+ggplot(df, aes(x = `Cutting Efficiency`, y = `Number of Off-Targets`, color = Gene_Index)) +
+  geom_point(size = 3) +
+  labs(
+    title = "Off-Target Risk vs. Efficiency for sgRNAs",
+    x = "Predicted Efficiency",
+    y = "Off-Target Risk (Number of Off-Targets)"
+  ) +
+  scale_color_viridis_d(option = "D") + # Use rainbow-like color palette
+  theme_minimal() +
+  theme(legend.position = "bottom") # Place legend at the bottom for better visualization
+```
+
+#### Figure 6 scatter plot illustrates the relationship between off-target risk and predicted efficiency for sgRNAs targeting the BRCA2 and PIK3CA genes. The X-axis represents the predicted efficiency of each sgRNA, indicating the likelihood of successful DNA cleavage. The Y-axis shows the off-target risk, measured as the number of off-target sites identified for each sgRNA. Points are colour-coded by sgRNA index and gene, with shades of purple representing BRCA2 sgRNAs and green representing PIK3CA sgRNAs. Notably, BRCA2_0 exhibits a low off-target risk (~20 sites) and relatively low efficiency, while PIK3CA_4 and PIK3CA_3 demonstrate high predicted efficiencies (~0.5–0.6) with moderate off-target risks. BRCA2_2 has the highest off-target risk (~35 sites) despite moderate efficiency, suggesting potential trade-offs between precision and effectiveness.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
