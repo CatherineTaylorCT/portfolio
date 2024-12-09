@@ -1,4 +1,4 @@
-# The HTML document pd RStudio analysis can be accessed via this link-     
+# The HTML document of RStudio analysis can be accessed via this link-     
 https://rpubs.com/CT27/1253152
  
  CRISPR Knockout in BRCA2 and PIK3CA Genes for Cancer Research
