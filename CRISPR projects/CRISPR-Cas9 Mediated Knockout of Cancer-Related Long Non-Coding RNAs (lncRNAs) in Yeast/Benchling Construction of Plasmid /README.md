@@ -1,4 +1,4 @@
-The Folders above are visual constructs of my CRISPR vector backbone plasmid inserted with the target sgRNA, PAM, and CHimeric guide scaffold. Phython completed another further analysis of the constructed CRISPR plasmid.
+The Folders above are visual constructs of my CRISPR vector backbone plasmid inserted with the target sgRNA, PAM, and Chimeric guide scaffold. Phython completed another further analysis of the constructed CRISPR plasmid.
 
 ![Project 2 benchling table](https://github.com/user-attachments/assets/47ace9d9-119c-40c1-8571-e56a6341196c)
 
