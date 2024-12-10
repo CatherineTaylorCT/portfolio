@@ -1,7 +1,7 @@
 # The HTML document of RStudio analysis can be accessed via this link-
 https://rpubs.com/CT27/1252732 
 
-## CRISPR-Cas9 Mediated Knockout of Cancer-Related Long Non-Coding RNAs (lncRNAs) in Yeast
+## Exploring the Function of BRCA1 Homologs in Yeast Using CRISPR-Cas9
 
 This project, Exploring the Function of BRCA1 Homologs in Yeast Using CRISPR-Cas9, aims to explore the role of RAD52 in homologous recombination (HR) and relate it to BRCA1 and BRCA2 in human cells. RAD52 mediates HR by facilitating RAD51 filament assembly and ssDNA annealing, a function analogous to the HR repair processes regulated by BRCA1/BRCA2 in humans  (Law et al., 2023). Using Saccharomyces cerevisiae as a model system to apply CRISPR-Cas9 technology to knockout RAD52, enabling investigation into HR disruption and DNA damage sensitivity, thereby mimicking conditions observed in BRCA1-deficient cancers (Previtali et al., 2024).
 The sgRNA analysis confirmed the selection of an optimal guide targeting a critical site in RAD52 with high specificity, ensuring precise and effective gene editing. Then, the CRISPR plasmid is constructed using Benchling, which further confirms the integrity and functional feasibility of the CRISPR construct. 
