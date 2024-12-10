@@ -9,7 +9,7 @@ This project uses CRISPR-Cas9 technology to perform targeted knockouts of BRCA2 
 ## Next steps: 
 Confirm the CRISPR plasmid integrity through sequencing to ensure the correct sgRNA sequences and essential components (promoter, scaffold, Cas9, etc.).
 
-Reference list
+## Reference list
 
 Arafeh, R. and Samuels, Y. (2019) 'PIK3CA in cancer: The past 30 years', Seminars in Cancer Biology, 59, pp. 36–49. Available at: https://doi.org/10.1016/j.semcancer.2019.02.002.
 Gorodetska, I., Kozeretska, I. and Dubrovska, A. (2019) 'BRCA genes: The role in genome stability, cancer stemness and therapy resistance', Journal of Cancer, 10(9), pp. 2109–2127. Available at: https://doi.org/10.7150/jca.30410.
