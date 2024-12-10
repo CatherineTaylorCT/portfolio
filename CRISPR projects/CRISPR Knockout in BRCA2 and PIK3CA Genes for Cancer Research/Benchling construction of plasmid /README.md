@@ -1,7 +1,8 @@
+The folders above consist of my construction of the CRISPR KO plasmid and further checking that the plasmid is correct in Python.
 
 ![Project 1 benchling data table](https://github.com/user-attachments/assets/24fc60b2-dac7-42e5-a272-a944d0450bfe)
 
-The tables above are from the Benchling CRISPR assembly, analysed below for both target human genes.  
+The tables above are results from the Benchling CRISPR assembly from my plasmid construct (inserting target sgRNA, PAM, and chimeric guide scaffold), which is analysed below for both target human genes.  
 
 ## PIK3CA Knockout Analysis
 
