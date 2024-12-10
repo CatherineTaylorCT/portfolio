@@ -1,4 +1,34 @@
-This portfolio contains collections of raw data (from outside sources and my class data), which I have studied independently by cleaning, processing, and analysing the biodiversity of all samples, species richness, and any other significance. This portfolio also contains data and data analysis of survival infection assays of Drosophila Melanogaster from being involved in a team project in the Frontrunners Internship. 
-As well as a new data analysis of The Colne River Assessment Project (CRAP), which is an ongoing project focused on monitoring and assessing the biodiversity and water quality in various waterways across East Essex and Suffolk. This was a side project I was involved in during my 6-week internship at the University of Essex bursary, which the UK Aerosol Society https://aerosol-soc.com/ funds is linked to ongoing research projects funded by the Academy of Medical Sciences and the European Commission.
+## This portfolio showcases projects and research, including raw data analysis, biodiversity assessments, infection assays, and CRISPR research. 
 
-I have recently added CRISPR projects to my portfolio. These research projects aim to understand and advance cancer therapeutics. By leveraging gene editing tools like CRISPR-Cas9 and CRISPRa, the projects study tumour suppressor genes, long non-coding RNAs, and homologous recombination pathways. These studies use Saccharomyces cerevisiae (yeast) as a model organism and human cell lines to design and analyse sgRNA guides and PAM sites and to assess and create CRISPR plasmids for each project.
+# Contents
+
+## CRISPR Projects
+
+- Gene editing projects focusing on cancer therapeutics using CRISPR tools.
+- Bioinformatic tools were used to analyse tumour suppressor genes, long non-coding RNAs, and homologous recombination pathways.
+- Used RStudio to design and validation of sgRNA guides and PAM sites.
+- Benchling and Python were used for CRISPR plasmid creation using Saccharomyces cerevisiae and human cell lines.
+
+
+## Water Samples
+
+- Comprehensive biodiversity studies in water, soil, and rockpool ecosystems.
+- Using RStudio Data cleaning, processing, and assessment for The Colne River Assessment Project (CRAP).
+- Data analysis and research from academic internships and bursary-funded projects.
+
+## Infection Assay
+
+- Research conducted as part of the Frontrunners Internship.
+- Data analysis in RStudio of survival infection assays of Drosophila Melanogaster from being involved in a team project.
+
+
+## Rockpool Studies
+
+- Species richness and significance evaluations.
+- Biodiversity analysis using RStudio in rockpool ecosystems.
+
+
+## Soil Samples
+
+- Analysis of soil biodiversity and species richness.
+- Data processing and code improvements using RStudio.
