@@ -1,0 +1,4 @@
+Rank,Coordinate,sgRNA Sequence,PAM,Cutting Efficiency (Doench '16),MIT Specificity Score,CFD Specifictiy Score,Number of Off-Target,Off-Target Summary,GC Content (%),Out-of-Frame Indel Rate,Lindel Score
+1,chrXIII:212743,AGAACAATGATAAAGAACTGGGG,GGG,77,99,100,4,0:0|1:1|3:3,30,25,56
+2,chrXIII:212815,ACAAAACGATGACCACCGCGAGG,AGG,72,100,100,0,0:0|1:0|3:0,55,32,50
+3,chrXIII:212618,GGATGTACTACCTTAGAAGGCGG,CGG,71,100,100,1,0:0|1:0|3:1,45,67,31

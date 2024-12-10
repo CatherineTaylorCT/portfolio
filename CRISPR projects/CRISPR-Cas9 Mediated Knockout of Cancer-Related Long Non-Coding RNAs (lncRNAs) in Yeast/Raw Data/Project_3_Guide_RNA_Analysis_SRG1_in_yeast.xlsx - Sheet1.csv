@@ -1,4 +1,0 @@
-Rank,Target Sequence,Genomic Location,Strand,GC Content (%),Self-Complementarity,MM0 (Exact Match),MM1,MM2,MM3,MIT Specificity Score,CFD Specificity Score,Doench '16 Efficiency,Mor.-Mateos Efficiency,Doench RuleSet3 Score,Off-Targets,Restriction Enzymes
-1,CAACAAGCTATGAATATGAGCGG,chrV:322725-322747,+,35,0,0,0,0,0,100,100,69,35,39,0,None
-2,ACTCACAAATGGAATTCAAGGGG,chrV:322335-322357,+,35,0,0,0,0,0,98,100,62,28,26,"2 (HGH1, TPK3)",AgsI
-3,CCCGTGCAGGGTTTTCTGAGCGG,chrV:322467-322489,+,60,0,0,0,0,0,99,100,62,50,-91,"2 (intergenic: HSP82-YAR1, YJU3-MBR1)","BstDEI, Hpy188I"

@@ -1,0 +1,168 @@
+---
+title: "Guide_RNA_Analysis_SRG1_in_yeast"
+author: "Catherine Taylor"
+date: "2024-10-31"
+output: html_document
+---
+
+##### This project focuses on the CRISPR-Cas9 mediated knockout of SRG1, a regulatory RNA in Saccharomyces cerevisiae, to study its role in chromatin regulation and gene expression. SRG1 is particularly relevant because it regulates the SER3 gene by modulating chromatin structure, providing a strong model for understanding the behaviour of long non-coding RNAs (lncRNAs) in human cancer biology. To achieve this, three guide RNAs (gRNAs) targeting SRG1 were designed and evaluated based on specificity and efficiency using tools like CRISPOR and ChopChop. Rank 1, Rank 2 and Rank 3 were also analysed for comparative studies for their high Doench '16 Efficiency Score of and minimal off-targets.The knockout experiments are designed to investigate the impact of SRG1 loss on chromatin structure, transcriptional repression, and stress response pathways in yeast, mimicking cancer-like dysregulation.
+
+```{R}
+# Guide RNA Analysis and validation for CRISPR knock out gene SRG1 in Saccharomyces cerevisiae (yeast). 
+
+# This analysis aims to identify the optimal guide RNA sequence among the top four ranked guides, focusing on specificity, efficiency, and off-target effects.
+
+# Load necessary libraries
+install.packages("ggcorrplot")
+library(readr)
+library(ggcorrplot)
+library(tidyr)
+library(readxl)      # For reading Excel files
+library(dplyr)       # For data manipulation
+library(ggplot2)     # For data visualisation
+library(knitr)       # For rendering tables in Markdown
+library(kableExtra)  # For enhanced table aesthetics
+library(gridExtra)   # For multi-plot layout
+```
+```{R}
+# Load the data
+RNA_Seq <- read_csv("Project_4_Guide_RNA_Analysis_SRG1_in_yeast.xlsx - Sheet1.csv")
+# Display the data table
+kable(RNA_Seq) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+```
+```{R}
+# Summary statistics of the dataset
+summary(RNA_Seq)
+```
+```{R}
+# Visualising MIT and CFD Specificity Scores
+ggplot(RNA_Seq, aes(x = factor(Rank), y = `MIT Specificity Score`, fill = factor(Rank))) +
+  geom_bar(stat = "identity") +
+  labs(title = "MIT Specificity Score by Guide Rank", x = "Guide Rank", y = "MIT Specificity Score") +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+
+##### Figure 1 is a bar chart that displays the MIT Specificity Scores of guide RNAs (gRNAs) ranked 1 to 3, measuring their precision for targeting the SRG1 gene in yeast during CRISPR-Cas9 experiments. The x-axis represents the guide rank, categorized from 1 to 3 based on their suitability for gene targeting. The y-axis shows the MIT Specificity Score, which ranges from 0 to 100, where a higher score indicates greater specificity and reduced likelihood of off-target effects. Guide Rank 1 achieves the maximum score of 100, representing perfect precision, while Ranks 2 and 3 also have high scores, slightly below 100, confirming their substantial targeting accuracy. 
+
+```{R}
+ggplot(RNA_Seq, aes(x = factor(Rank), y = `CFD Specificity Score`, fill = factor(Rank))) +
+  geom_bar(stat = "identity") +
+  labs(title = "CFD Specificity Score by Guide Rank", x = "Guide Rank", y = "CFD Specificity Score") +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+
+##### Figure 2 bar chart illustrates the CFD Specificity Scores for guide RNAs (gRNAs) ranked 1 to 3, evaluated for their precision in targeting the SRG1 gene in yeast for CRISPR-Cas9 experiments. The x-axis represents the guide rank, ranging from 1 to 3, while the y-axis shows the CFD (Cutting Frequency Determination) Specificity Score, scaled from 0 to 100. The CFD score quantifies the likelihood of accurate binding to the intended target sequence while minimising off-target binding events. In this chart, all three guides achieve the maximum CFD score of 100, indicating perfect specificity.
+
+```{R}
+# Efficiency scores comparison using a scatter plot
+ggplot(RNA_Seq, aes(x = factor(Rank))) +
+  geom_point(aes(y = `Doench '16 Efficiency`, color = "Doench '16")) +
+  geom_point(aes(y = `Mor.-Mateos Efficiency`, color = "Mor.-Mateos")) +
+  geom_point(aes(y = `Doench RuleSet3 Score`, color = "RuleSet3")) +
+  labs(title = "Efficiency Scores by Guide Rank", x = "Guide Rank", y = "Efficiency Score") +
+  scale_color_manual(values = c("Doench '16" = "blue", "Mor.-Mateos" = "green", "RuleSet3" = "red")) +
+  theme_minimal()
+```
+
+##### Figure 3 shows a scatter plot presenting the Efficiency Scores for guide RNAs (gRNAs) ranked 1 to 3. The x-axis displays the guide rank, while the y-axis indicates Efficiency Scores based on three metrics: Doench '16 (blue), Mor.-Mateos (green), and RuleSet3 (red). The Doench '16 Efficiency Score predicts gRNA binding and cleavage success, with higher values signifying more potent activity. At the same time, the Mor.-Mateos Efficiency Score reflects experimental validation of gRNA activity, and the RuleSet3 Efficiency Score evaluates functionality, with positive values indicating high efficiency. Guide Rank 1 demonstrates the highest efficiency across all metrics, particularly for Doench '16, indicating strong targeting potential. 
+
+```{R}
+# Table summarizing off-targets for each guide
+off_target_summary <- RNA_Seq %>%
+  select(Rank, `Off-Targets`)
+
+kable(off_target_summary, col.names = c("Rank", "Off-Target Summary")) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+```
+
+
+##### Table 1 summarises the off-target analysis for guide RNAs (gRNAs) ranked 1 to 3, targeting the SRG1 gene in yeast. Rank 1 demonstrates perfect specificity with zero off-targets, making it the most precise choice for CRISPR-Cas9-mediated knockout experiments. Rank 2, while highly specific, has two off-targets located in exonic regions of the HGH1 and TPK3 genes, which may pose a risk of unintended gene disruptions. Rank 3 also shows two off-targets located in intergenic regions between HSP82-YAR1 and YJU3-MBR1.
+
+```{R}
+# Create a correlation matrix for specificity and efficiency scores
+cor_matrix <- cor(RNA_Seq %>%
+  select(`MIT Specificity Score`, `CFD Specificity Score`, `Doench '16 Efficiency`, `Mor.-Mateos Efficiency`, `Doench RuleSet3 Score`))
+
+# Visualize the correlation matrix
+ggcorrplot(cor_matrix, method = "circle", type = "lower", lab = TRUE, lab_size = 3, title = "Correlation Matrix of Scores")
+```
+##### Figure 4 correlation matrix visualises the relationships between various scoring metrics used to evaluate guide RNAs (gRNAs) for targeting the SRG1 gene in yeast. The x-axis and y-axis represent the scores: Doench '16 Efficiency, Mor.-Mateos Efficiency, MIT Specificity Score, and Doench RuleSet3 Score, with their pairwise correlations indicated in the cells. The colour gradient signifies the strength and direction of the correlation, ranging from blue for strong negative correlations (-1.0) to red for strong positive correlations (+1.0). Key observations include a strong positive correlation (0.87) between the MIT Specificity Score and Doench '16 Efficiency, suggesting that guides with high specificity also tend to have higher Efficiency.
+
+```{R}
+# Identify the best guide based on specificity and efficiency
+best_guide <- RNA_Seq %>%
+  filter(`MIT Specificity Score` >= 98 & `CFD Specificity Score` == 100 & `Doench '16 Efficiency` > 60 & `Off-Targets` == "0")
+
+# Display the best guide in a formatted table
+kable(best_guide, col.names = c("Rank", "Target Sequence", "Genomic Location", "Strand", "GC Content (%)",
+                                "Self-Complementarity", "MM0", "MM1", "MM2", "MM3", 
+                                "MIT Specificity Score", "CFD Specificity Score", 
+                                "Doench '16 Efficiency", "Mor.-Mateos Efficiency", 
+                                "Doench RuleSet3 Score", "Off-Targets", "Restriction Enzymes")) %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = FALSE)
+
+# Conclusion: Based on the analysis, the guide RNA with Rank 1 is the optimal choice due to its high specificity, strong efficiency, and absence of off-target effects.
+```
+
+##### Table 2 identifies the optimal guide RNA for targeting the SRG1 gene in yeast, summarised. Rank 1 is the most suitable choice due to its exceptional performance across multiple evaluation metrics. Its Target Sequence, CAACAAGCTATGAATATGAGCGG, is located on chromosome V at position 322725–322747 on the forward strand with a GC content of 35%. The guide shows no self-complementarity or mismatches (MM0–MM3), ensuring minimal unintended interactions. Importantly, it achieves a perfect MIT Specificity Score (100) and CFD Specificity Score (100), guaranteeing high precision and specificity in the yeast genome. The guide's Doench '16 Efficiency Score is a robust 69, coupled with a moderate Mor.-Mateos Efficiency Score of 35 and a Doench RuleSet3 Score of 39, collectively indicating strong potential for effective gene knockout. Furthermore, this guide has zero off-targets and no associated restriction enzyme conflicts.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
