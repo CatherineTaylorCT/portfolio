@@ -1,0 +1,424 @@
+---
+title: "qPCR analysis of ATM targeting CRISPRi screen for GBM"
+author: "Catherine Taylor (internship at MIlner Theraputics at Cambridge University
+  - Supervisor - Sukjun Lee"
+date: "2025-09-07"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#### Glioblastoma (GBM) is the most common and aggressive primary brain tumour in adults, accounting for ~50% of all malignant gliomas (Ostrom et al., 2021). Despite maximal surgical resection followed by radiotherapy and temozolomide chemotherapy (the Stupp protocol), prognosis remains poor, with a median survival of only 14–16 months and a 5-year survival rate of <10% (Stupp et al., 2005; Weller et al., 2017). Treatment failure is driven by Glioblastoma stem-like cancer cells (GSCs), intratumoural heterogeneity, and particularly radio-resistance, which is mediated by efficient DNA damage repair pathways (Carruthers et al., 2018). Furthermore, this drives recurrence and mortality. Strategies to overcome this resistance include targeting the DNA-damage response (DDR) to sensitise tumour cells to radiation. The kinase ATM (ataxia-telangiectasia mutated) is a master regulator of double-strand break signalling and repair, and its inhibition has been shown to enhance radiation sensitivity in preclinical GBM models (Rainey et al., 2020; Durant & Fink, 2021).
+
+#### Our platform builds on the 3D clonogenic assay originally developed on Alvetex scaffolds by Anthony J. Chalmers (University of Glasgow) and Natividad Gómez-Román (University of Strathclyde) (Chalmers et al., 2017; Gómez-Román et al., 2020), which the Milner Therapeutics Institute has collaborated with there specialised CRISPR technology team for screening, including improved automated colony quantification with support from Anke Husmann (bioinformatics). This collaboration has also enabled the sharing and utilisation of the G7 cancer cell line, which is a glioblastoma tissue sample initially isolated and characterised by Colin Watts in Cambridge. Jun, my supervisor, has engineered this cell line using the CRISPRi screening tool - G7-Zim3 CRISPRi GBM line (dCas9-ZIM3-KRAB). This also includes an attached repressor domain (ZIM3-KRAB fusion).
+
+#### The project adapts and scales a reverse-transfection workflow from 48- to 96-well format, enabling automated handling on a liquid handler and transfer to Alvetex plates for 3D clonogenic readouts under 0 Gy and 3 Gy conditions. As part of assay development and target validation, we quantify on-target transcriptional repression of ATM following CRISPRi with two independent sgRNAs (ATM1 and ATM2) relative to a non-targeting control (NT-sgRNA). This qPCR analysis covers two designs: (i) pooled cells harvested from first 96 well plate reverse transfection using full automation, and (ii) a concentration series comparing 0.45 µM vs 0.045 µM sgRNA input across replicate reverse transfections manually.
+
+#### GBM cells were reverse-transfected in Matrigel-coated 96-well plates using Lipofectamine™ RNAiMAX with ATM1, ATM2, or NT sgRNAs. Cells were seeded at 8,000 per well and incubated for 72 h before harvest. RNA was extracted with TRIzol and the Micro Kit, quantified by NanoDrop, and reverse-transcribed with the Transcriptor First Strand cDNA Synthesis Kit using random hexamers. qPCR was performed on QuantStudio instruments with PowerUp™ SYBR™ Green, using ACTB as the internal control. Relative ATM expression was determined by the ΔΔCt method, reporting fold-change normalised to NT-sgRNA. These data provide molecular validation of ATM repression under both standard and reduced-dose sgRNA conditions, supporting the incorporation of CRISPR-based screening into the ClonoScreen3D platform for the scalable discovery of radiosensitisers in GBM.
+
+### qPCR results from (i)- NOTE: This data is from the same sample but I completed 2 technical replicates of the qPCR.
+
+```{R}
+need <- c(
+  "readr","readxl","dplyr","tidyr","stringr","purrr","janitor","ggplot2","forcats"
+)
+to_install <- setdiff(need, rownames(installed.packages()))
+if (length(to_install)) install.packages(to_install, quiet = TRUE)
+invisible(lapply(need, library, character.only = TRUE))
+```
+```{R}
+
+data <- read_csv("13.Aug.pooled.csv")
+head(data)
+data <- read_csv("15.Aug.96w.csv")
+head(data)
+```
+```{R}
+## 1) Paths + basic labels
+CSV_REP1 <- "13.Aug.pooled.csv"   # first technical replicate
+CSV_REP2 <- "15.Aug.96w.csv"      # second technical replicate
+
+CONTROL_LABEL <- "NtsgRNA"        # your calibrator / control
+TARGET_GENE   <- "ATM"            # target gene
+REF_GENE      <- "ACTB"           # housekeeping gene
+
+# How to handle "Undetermined": NA = drop from means; use 40 if your SOP wants max cycles
+UND_CT <- NA_real_                # or 40
+
+## 2) Plate mapping encoded in code
+# Columns 2–4  -> "ATM 2 sgRNA"
+# Columns 5–7  -> "ATM 1 sgRNA"
+# Columns 8–10 -> "NtsgRNA"
+sample_from_col <- function(colN) case_when(
+  colN %in% 2:4  ~ "ATM 2 sgRNA",
+  colN %in% 5:7  ~ "ATM 1 sgRNA",
+  colN %in% 8:10 ~ "NtsgRNA",
+  TRUE ~ NA_character_
+)
+
+# Rows: B = ACTB (ref), C = ATM (target).
+gene_from_row <- function(rowL) case_when(
+  toupper(rowL) == "B" ~ REF_GENE,
+  toupper(rowL) == "C" ~ TARGET_GENE,
+  TRUE ~ NA_character_
+)
+
+## 3) Read + tidy ONE csv
+parse_raw_csv <- function(path, run_label) {
+  # Read everything as character so "Undetermined" is preserved
+  df <- read_csv(path, col_types = cols(.default = col_character()), show_col_types = FALSE)
+
+  # Rename the first column to "rowL" (A..H). Keep only columns named 1..12.
+  names(df)[1] <- "rowL"
+  df <- df %>% select(rowL, matches("^\\d+$"))
+
+  # Make long format: one row per well
+  df_long <- df %>%
+    pivot_longer(-rowL, names_to = "col", values_to = "ct_raw") %>%
+    mutate(
+      rowL    = toupper(str_trim(rowL)),       # "A".."H"
+      col_num = as.integer(col),               # "1".."12" -> 1..12
+      well    = sprintf("%s%02d", rowL, col_num),
+      # Convert Ct: numeric if possible; if "Undetermined", set to UND_CT (NA or 40)
+      ct      = suppressWarnings(as.numeric(ct_raw)),
+      ct      = if_else(is.na(ct) & !is.na(ct_raw) &
+                          str_detect(ct_raw, regex("^undetermined$", TRUE)),
+                        UND_CT, ct),
+      # Map to your sample/groups and genes
+      sample  = sample_from_col(col_num),
+      gene    = gene_from_row(rowL),
+      run     = run_label
+    ) %>%
+    # Keep only wells that belong to our mapping and that have numeric Ct
+    filter(!is.na(sample), !is.na(gene), !is.na(ct)) %>%
+    select(run, well, rowL, col_num, sample, gene, ct)
+
+  df_long
+}
+
+## 4) ΔΔCt for ONE replicate
+compute_ddct <- function(per_well_df) {
+  # Mean Ct per run × sample × gene
+  gene_means <- per_well_df %>%
+    group_by(run, sample, gene) %>%
+    summarise(mean_ct = mean(ct, na.rm = TRUE), .groups = "drop")
+
+  # ΔCt = Ct_target - Ct_ref for each sample (within each run)
+  wide <- gene_means %>%
+    filter(gene %in% c(TARGET_GENE, REF_GENE)) %>%
+    pivot_wider(names_from = gene, values_from = mean_ct)
+
+  # Safety check: both columns present
+  stopifnot(all(c(TARGET_GENE, REF_GENE) %in% names(wide)))
+
+  dCt <- wide %>%
+    mutate(delta_ct = .data[[TARGET_GENE]] - .data[[REF_GENE]]) %>%
+    select(run, sample, delta_ct)
+
+  # Calibrator ΔCt (control mean within each run)
+  cal <- dCt %>%
+    filter(sample == CONTROL_LABEL) %>%
+    group_by(run) %>%
+    summarise(cal_delta_ct = mean(delta_ct, na.rm = TRUE), .groups = "drop")
+
+  # ΔΔCt and fold change
+  final <- dCt %>%
+    left_join(cal, by = "run") %>%
+    mutate(
+      delta_delta_ct = delta_ct - cal_delta_ct,
+      fold_change    = 2^(-delta_delta_ct)
+    ) %>%
+    arrange(run, sample)
+
+  list(gene_means = gene_means, final = final)
+}
+
+## 5) Run on the two files
+rep1_per_well <- parse_raw_csv(CSV_REP1, "Rep1")
+rep2_per_well <- parse_raw_csv(CSV_REP2, "Rep2")
+
+# Show the organised per-well data
+cat("\n=== Rep1: per-well (mapped; Undetermined removed) ===\n")
+print(rep1_per_well)
+cat("\n=== Rep2: per-well (mapped; Undetermined removed) ===\n")
+print(rep2_per_well)
+
+## 6) Compute ΔΔCt + fold change for each replicate
+rep1 <- compute_ddct(rep1_per_well)
+rep2 <- compute_ddct(rep2_per_well)
+
+cat("\n=== Rep1: mean Ct per sample × gene ===\n"); print(rep1$gene_means)
+cat("\n=== Rep1: ΔΔCt and fold change ===\n");   print(rep1$final)
+
+cat("\n=== Rep2: mean Ct per sample × gene ===\n"); print(rep2$gene_means)
+cat("\n=== Rep2: ΔΔCt and fold change ===\n");   print(rep2$final)
+
+## 7) Combine replicates + quick summary + plot
+fc_all <- bind_rows(rep1$final, rep2$final) %>%
+  mutate(sample = fct_relevel(sample, CONTROL_LABEL)) %>%
+  arrange(sample, run)
+
+summary_df <- fc_all %>%
+  group_by(sample) %>%
+  summarise(
+    mean_expr = mean(fold_change, na.rm = TRUE),
+    sd_expr   = sd(fold_change,   na.rm = TRUE),
+    .groups = "drop"
+  )
+
+cat("\n=== Combined: per-run fold change ===\n"); print(fc_all)
+cat("\n=== Summary: mean ± SD across replicates ===\n"); print(summary_df)
+
+# Bar (mean ± SD) with the 2 replicate points
+ggplot(summary_df, aes(x = sample, y = mean_expr, fill = sample)) +
+  geom_col(width = 0.6, colour = "black") +
+  geom_errorbar(aes(ymin = mean_expr - sd_expr, ymax = mean_expr + sd_expr),
+                width = 0.2) +
+  geom_point(data = fc_all, aes(sample, fold_change),
+             position = position_jitter(width = 0.08, height = 0), size = 2) +
+  labs(
+    y = paste(TARGET_GENE, "Fold Expression (vs", CONTROL_LABEL, ")"),
+    x = NULL,
+    title = paste(TARGET_GENE, "expression (mean ± SD), normalised to", REF_GENE)
+  ) +
+  theme_minimal(base_size = 13) +
+  theme(legend.position = "none")
+```
+
+
+#### Figure 1. ATM expression after sgRNA transfection, quantified by qPCR. Bars show the mean fold expression of ATM (2^-ΔΔCt), where ΔCt values were normalised to the reference gene ACTB, and ΔΔCt values were calibrated to the non-targeting control (NtsgRNA), which is set to 1.0. Black dots indicate the two technical replicates (n = 2) both from the same sample, and error bars represent ± SD. Both ATM-targeting guides (ATM 1 sgRNA and ATM 2 sgRNA) show strong knockdown of ATM compared with the NtsgRNA control, with expression reduced to only a small fraction of control levels (low bars indicate greater knockdown).
+
+#### qPCR results from (ii), comparing 0.45 µM vs 0.045 µM sgRNA input across 2 biological replicates of reverse transfections manually.
+
+```{R}
+## 1) Read your dataset (Excel)
+library(readxl)
+
+data <- read_excel("pcr_reverse_transfection_data.xlsx", sheet = 1)
+head(data)
+```
+```{R}
+## 1) Labels
+CONTROL_LABEL <- "NtsgRNA"  # control
+TARGET_GENE   <- "ATM"      # target gene
+REF_GENE      <- "ACTB"     # housekeeping gene
+
+## 2) Robust column mapping
+
+get_first_col <- function(df, options) {
+  found <- intersect(names(df), options)
+  if (length(found) == 0) stop("Missing expected column. Looked for: ",
+                               paste(options, collapse=", "))
+  found[1]
+}
+
+gene_col <- get_first_col(data, c("gene","Gene"))
+primer_col <- get_first_col(data, c("primer","Primer"))
+ct1_col <- get_first_col(data, c("Ct_Bio1","ct_bio1"))
+ct2_col <- get_first_col(data, c("Ct_Bio2","ct_bio2"))
+conc_col <- get_first_col(data, c("concentration_uM","concentration_um",
+                                  "Concentration_uM","Concentration_um"))
+
+df <- data %>%
+  transmute(
+    gene             = as.character(.data[[gene_col]]),
+    concentration_uM = suppressWarnings(as.numeric(.data[[conc_col]])),
+    primer           = toupper(str_trim(as.character(.data[[primer_col]]))),
+    Ct_Bio1          = suppressWarnings(as.numeric(.data[[ct1_col]])),
+    Ct_Bio2          = suppressWarnings(as.numeric(.data[[ct2_col]]))
+  ) %>%
+  mutate(
+    gene = case_when(
+      str_to_upper(gene) == "NTSGRNA" ~ "NtsgRNA",
+      str_to_upper(gene) == "ATM 1"   ~ "ATM 1",
+      str_to_upper(gene) == "ATM 2"   ~ "ATM 2",
+      TRUE                            ~ gene
+    )
+  )
+
+## 3) Display label for concentration 
+fmt_conc <- function(x) {
+  s <- format(x, trim = TRUE, scientific = FALSE, digits = 12)
+  s <- sub("0+$", "", s)   # drop trailing zeros
+  s <- sub("\\.$", "", s)  # drop trailing dot if any
+  s
+}
+df <- df %>% mutate(conc_label = fmt_conc(concentration_uM))
+
+## 4) Show the INPUT Ct table per replicate
+ct_input_table <- df %>%
+  arrange(concentration_uM, gene, primer) %>%
+  transmute(
+    gene,
+    concentration_uM = conc_label,   # formatted display only
+    primer,
+    Bio1 = round(Ct_Bio1, 3),
+    Bio2 = round(Ct_Bio2, 3)
+  )
+
+if (requireNamespace("knitr", quietly = TRUE)) {
+  knitr::kable(ct_input_table, caption = "Input Ct per replicate (Bio1, Bio2)")
+} else {
+  print(ct_input_table)
+}
+
+## 5) ΔCt PER REPLICATE: Ct(TARGET) - Ct(REF) for each Bio
+ct_long <- df %>%
+  pivot_longer(c(Ct_Bio1, Ct_Bio2),
+               names_to = "bio", values_to = "ct") %>%
+  mutate(bio = recode(bio, Ct_Bio1 = "Bio1", Ct_Bio2 = "Bio2")) %>%
+  filter(primer %in% c(TARGET_GENE, REF_GENE), is.finite(ct))
+
+dCt <- ct_long %>%
+  select(bio, gene, concentration_uM, primer, ct) %>%
+  # (group_by/summarise kept for safety—does nothing if already 1 row per combo)
+  group_by(bio, gene, concentration_uM, primer) %>%
+  summarise(ct = mean(ct, na.rm = TRUE), .groups = "drop") %>%
+  tidyr::pivot_wider(names_from = primer, values_from = ct) %>%
+  mutate(delta_ct = .data[[TARGET_GENE]] - .data[[REF_GENE]]) %>%
+  select(bio, gene, concentration_uM, delta_ct)
+
+## 6) ΔΔCt PER REPLICATE: calibrate to NtsgRNA at SAME conc.
+cal <- dCt %>%
+  filter(gene == CONTROL_LABEL) %>%
+  select(bio, concentration_uM, cal_delta_ct = delta_ct)
+
+ddCt <- dCt %>%
+  left_join(cal, by = c("bio","concentration_uM")) %>%
+  mutate(
+    delta_delta_ct = delta_ct - cal_delta_ct,
+    fold_change    = 2^(-delta_delta_ct)
+  ) %>%
+  arrange(concentration_uM, gene, bio)
+
+## 7) TABLE A — PER-REPLICATE FOLD CHANGE (Bio1 & Bio2)
+fc_per_bio <- ddCt %>%
+  mutate(concentration = fmt_conc(concentration_uM)) %>%  # display-only label
+  select(concentration, gene, bio, fold_change) %>%
+  mutate(fold_change = round(fold_change, 4)) %>%
+  tidyr::pivot_wider(names_from = bio, values_from = fold_change) %>%
+  arrange(concentration, gene)
+
+if (requireNamespace("knitr", quietly = TRUE)) {
+  knitr::kable(fc_per_bio, caption = "Fold change (2^-ΔΔCt) per biological replicate")
+} else {
+  print(fc_per_bio)
+}
+
+## 8) TABLE B — COMBINED Mean ± SD (across Bio1 & Bio2)
+fc_summary <- ddCt %>%
+  mutate(concentration = fmt_conc(concentration_uM)) %>%
+  group_by(concentration, gene) %>%
+  summarise(
+    mean_fold_change = round(mean(fold_change, na.rm = TRUE), 4),
+    sd_fold_change   = round(sd(fold_change,   na.rm = TRUE), 4),
+    .groups = "drop"
+  ) %>%
+  arrange(concentration, gene)
+
+if (requireNamespace("knitr", quietly = TRUE)) {
+  knitr::kable(fc_summary, caption = "Mean ± SD fold change across biological replicates")
+} else {
+  print(fc_summary)
+}
+```
+```{R}
+## 9) Combined plot (two concentrations + SD + replicate points)
+library(ggplot2)
+library(forcats)
+
+# Display labels for plot only (keep your calculations unchanged)
+fc_plot <- fc_summary %>%
+  mutate(
+    gene_lbl = dplyr::recode(gene,
+      "ATM 1" = "ATM-sgRNA 1",
+      "ATM 2" = "ATM-sgRNA 2",
+      "NtsgRNA" = "NtsgRNA"
+    ),
+    conc_lbl = factor(paste0(concentration, " \u00B5M"),
+                      levels = c("0.45 \u00B5M", "0.045 \u00B5M"))
+  )
+
+dd_plot <- ddCt %>%
+  mutate(
+    gene_lbl = dplyr::recode(gene,
+      "ATM 1" = "ATM-sgRNA 1",
+      "ATM 2" = "ATM-sgRNA 2",
+      "NtsgRNA" = "NtsgRNA"
+    ),
+    conc_lbl = factor(paste0(fmt_conc(concentration_uM), " \u00B5M"),
+                      levels = c("0.45 \u00B5M", "0.045 \u00B5M"))
+  )
+
+# Colours to match your example (feel free to tweak)
+cols <- c("0.45 \u00B5M" = "#F29988", "0.045 \u00B5M" = "#2CC5D5")
+
+p <- ggplot(fc_plot, aes(x = gene_lbl, y = mean_fold_change, fill = conc_lbl)) +
+  # bars (nearly overlapping via a tight dodge)
+  geom_col(position = position_dodge(width = 0.6), width = 0.55, colour = "black") +
+  # error bars (SD)
+  geom_errorbar(aes(ymin = mean_fold_change - sd_fold_change,
+                    ymax = mean_fold_change + sd_fold_change,
+                    group = conc_lbl),
+                position = position_dodge(width = 0.6), width = 0.18) +
+  # overlay the two bio replicate points
+  geom_point(data = dd_plot,
+             aes(x = gene_lbl, y = fold_change, fill = conc_lbl),
+             position = position_jitterdodge(jitter.width = 0.06, dodge.width = 0.6),
+             size = 2, shape = 21, stroke = 0.2, colour = "black") +
+  scale_fill_manual(values = cols, name = "Concentration") +
+  labs(title = "ATM Expression",
+       y = "ATM Fold Expression",
+       x = NULL) +
+  theme_minimal(base_size = 14) +
+  theme(
+    panel.grid.major.x = element_blank(),
+    legend.position = "right"
+  )
+
+p
+```
+
+
+#### Figure 2. ATM expression across two sgRNA concentrations (mean ± SD). qPCR of ATM after reverse transfection with ATM-sgRNA 1 or ATM-sgRNA 2 at 0.45 µM or 0.045 µM, with NtsgRNA as the control. Ct values were first normalised to ACTB to give ΔCt = Ct(ATM) − Ct(ACTB). Then, for each concentration, we subtracted the control’s ΔCt (NtsgRNA) from each sample’s ΔCt—i.e., ΔΔCt = ΔCt(sample) − ΔCt(control at same conc). Fold expression was calculated as 2^-ΔΔCt, so the control is ~1.0. Bars show the mean of n = 2 biological replicates, error bars = SD, and open circles show individual replicate values. Both ATM-targeting guides strongly reduce ATM expression at both concentrations, with only modest guide and dose-dependent differences.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
