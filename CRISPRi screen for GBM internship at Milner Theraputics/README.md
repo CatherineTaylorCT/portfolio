@@ -1,10 +1,15 @@
 ## The HTML document can be accessed via this link- https://rpubs.com/CT27/1344732
 
 ## qPCR validation of ATM-targeting CRISPRi in a GBM ClonoScreen3D workflow
+
 Author: Catherine Taylor (8-week internship, Milner Therapeutics Institute, University of Cambridge)
+
 Supervisor: Sukjun (Jun) Lee
+
 Head of lab/team: Erica Bello
+
 Programme: Funded & organised by the Cancer Research Cambridge Centre
+
 Dates: 7th July 2025 - 29th August 2025
 
 ### Overview
